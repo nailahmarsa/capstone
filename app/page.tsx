@@ -86,7 +86,7 @@ function Input({ label, placeholder, type = "text" }) {
       <input
         type={type}
         placeholder={placeholder}
-        className="w-full bg-gray-100 rounded-md px-3 py-2 outline-none text-sm placeholder:text-xs"
+        className="w-full bg-gray-100 text-black rounded-md px-3 py-2 outline-none text-sm placeholder:text-gray-400"
       />
     </div>
   );
