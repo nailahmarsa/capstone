@@ -6,15 +6,28 @@ export default function Home() {
   const [isSignUp, setIsSignUp] = useState(true);
 
   return (
-    <main className="min-h-screen bg-[#EDE5DB] flex items-center justify-center">
-      <AuthCard isSignUp={isSignUp} setIsSignUp={setIsSignUp} />
-    </main>
+    <main className="relative min-h-screen flex items-center justify-center overflow-hidden">
+       {/* Background Image */}
+  <Image
+    src="/bg1.jpg" 
+    alt="background"
+    fill
+    className="object-cover blur-[2px] scale-100 brightness-90"
+  />
+    {/* Overlay */}
+  <div className="absolute inset-0 bg-white/40"></div>
+
+  <div className="relative z-10 w-full flex items-center justify-center">
+    <AuthCard isSignUp={isSignUp} setIsSignUp={setIsSignUp} />
+  </div>
+
+</main>
   );
 }
 
 function AuthCard({ isSignUp, setIsSignUp }) {
   return (
-    <div className="bg-white rounded-2xl shadow-md p-6 w-full max-w-sm mx-auto">
+    <div className="bg-white/95 rounded-2xl shadow-lg p-6 w-[360px] mx-auto">
       {/* Logo */}
      <div className="flex flex-col items-center gap-2">
        <Image
@@ -86,7 +99,7 @@ function Input({ label, placeholder, type = "text" }) {
       <input
         type={type}
         placeholder={placeholder}
-        className="w-full bg-gray-100 rounded-md px-3 py-2 outline-none text-sm placeholder:text-xs"
+        className="w-full bg-gray-100 text-black rounded-md px-3 py-2 outline-none text-sm placeholder:text-gray-400"
       />
     </div>
   );
