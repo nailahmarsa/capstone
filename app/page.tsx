@@ -1,6 +1,7 @@
 "use client";
 import { useState } from "react";
 import Image from "next/image";
+import { FaEye, FaEyeSlash } from "react-icons/fa";
 
 export default function Home() {
   const [isSignUp, setIsSignUp] = useState(true);
@@ -91,17 +92,32 @@ function AuthCard({ isSignUp, setIsSignUp }) {
 }
 
 function Input({ label, placeholder, type = "text" }) {
+  const [show, setShow] = useState(false);
+
+  const isPassword = type === "password";
+
   return (
     <div>
       <label className="block text-sm mb-1 text-[#354e30] font-bold">
         {label}
       </label>
-      <input
-        type={type}
-        placeholder={placeholder}
-        className="w-full bg-gray-100 text-black rounded-md px-3 py-2 outline-none text-sm placeholder:text-gray-400"
-      />
+
+      <div className="relative">
+        <input
+          type={isPassword ? (show ? "text" : "password") : type}
+          placeholder={placeholder}
+          className="w-full bg-gray-100 text-black rounded-md px-3 py-2 pr-10 outline-none text-sm placeholder:text-gray-400"
+        />
+
+        {isPassword && (
+          <span
+            onClick={() => setShow(!show)}
+            className="absolute right-3 top-1/2 -translate-y-1/2 cursor-pointer text-gray-500"
+          >
+            {show ? <FaEye /> : <FaEyeSlash />}
+          </span>
+        )}
+      </div>
     </div>
   );
 }
-  
