@@ -47,11 +47,7 @@ function AuthCard({ isSignUp, setIsSignUp }) {
 
       {/* Form */}
       <form className="space-y-4 mt-8">
-        {isSignUp && (
-          <Input label="Username" placeholder="Enter your username" />
-        )}
-
-        <Input label="Email" placeholder="capstone@gmail.com" />
+        <Input label="Username" placeholder="Enter your username" />
         <Input label="Password" placeholder="******" type="password" />
 
         <div className="text-right text-xs font-medium text-[#354e30] mt-0.5 cursor-pointer hover:underline transition">
