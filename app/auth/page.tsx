@@ -13,7 +13,7 @@ export default function AuthPage() {
     <main className="relative min-h-screen flex items-center justify-center overflow-hidden">
       {/* Background Image */}
       <Image
-        src="/bg1.jpg"
+        src="/bg-library.webp"
         alt="background"
         fill
         className="object-cover blur-[2px] scale-100 brightness-90"
