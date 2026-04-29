@@ -5,6 +5,7 @@ import Image from "next/image";
 import Link from "next/link";
 import { FaEye, FaEyeSlash } from "react-icons/fa";
 import { ArrowLeft } from "lucide-react";
+import { useRouter } from "next/navigation";
 
 export default function AuthPage() {
   const [isSignUp, setIsSignUp] = useState(true);
@@ -46,6 +47,7 @@ function AuthCard({
   isSignUp: boolean;
   setIsSignUp: (value: boolean) => void;
 }) {
+  const router = useRouter();
   return (
     <div className="bg-white/95 rounded-2xl shadow-lg p-6 w-full max-w-[360px] mx-auto">
       {/* Logo */}
@@ -65,7 +67,14 @@ function AuthCard({
       </h2>
 
       {/* Form */}
-      <form className="space-y-4 mt-8" onSubmit={(e) => e.preventDefault()}>
+      <form
+        className="space-y-4 mt-8"
+        onSubmit={(e) => {
+          e.preventDefault();
+          console.log("LOGIN KEKLIK"); // buat cek
+          router.push("/dashboard");
+        }}
+      >
         {/* Username tetap ada untuk Sign In & Sign Up karena Email dihapus */}
         <Input label="Username" placeholder="Enter your username" />
 

@@ -23,3 +23,21 @@ body {
 html {
   scroll-behavior: smooth;
 }
+
+/* HIDE SCROLLBAR */
+.no-scrollbar::-webkit-scrollbar {
+  display: none;
+}
+
+.no-scrollbar {
+  -ms-overflow-style: none;  
+  scrollbar-width: none;     
+}
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+}
