@@ -19,9 +19,6 @@ import {
   BadgeCheck,
   Menu,
   X,
-  Shield,
-  Heart,
-  Zap,
 } from "lucide-react";
 
 export default function LandingPage() {

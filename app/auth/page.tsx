@@ -3,6 +3,7 @@
 import { useState } from "react";
 import Image from "next/image";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { FaEye, FaEyeSlash } from "react-icons/fa";
 import { ArrowLeft } from "lucide-react";
 
@@ -47,6 +48,7 @@ function AuthCard({
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
+  const router = useRouter();
 
   const handleAuth = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -70,18 +72,26 @@ function AuthCard({
         body: JSON.stringify(payload),
       });
 
-      const data = await response.json();
+      const result = await response.json();
 
       if (response.ok) {
         alert(isSignUp ? "Registrasi Berhasil!" : "Login Berhasil!");
 
-        if (!isSignUp && data.token) {
-          localStorage.setItem("token", data.token);
-        }
+        if (!isSignUp) {
+          // Mengecek lokasi token secara fleksibel
+          const token = result.token || result.data?.token;
 
-        if (isSignUp) setIsSignUp(false);
+          if (token) {
+            localStorage.setItem("token", token);
+          }
+
+          // Redirect dijalankan tanpa menunggu pengecekan token yang kaku
+          router.push("/dashboard");
+        } else {
+          setIsSignUp(false);
+        }
       } else {
-        alert("Gagal: " + (data.message || "Data tidak valid"));
+        alert("Gagal: " + (result.message || "Data tidak valid"));
       }
     } catch (error) {
       alert("Koneksi gagal ke backend!");
