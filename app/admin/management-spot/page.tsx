@@ -144,12 +144,12 @@ const inputStyle: React.CSSProperties = {
   fontStyle: "normal",
 };
 
-// ─── SHARED TOPBAR (SEARCH CLEANED & CORRECT PROFILE PATH) ───
+// ─── SHARED TOPBAR ───
 function Topbar() {
   const router = useRouter();
   const [admin, setAdmin] = useState({
-    name: "Aisyah Rahma",
-    email: "aisyahrahma@gmail.com",
+    name: "Admin",
+    email: "admin@mail.com",
     avatar: "/profilepic.jpg",
   });
 
@@ -158,8 +158,8 @@ function Topbar() {
     const storedEmail = localStorage.getItem("email");
     if (storedUsername || storedEmail) {
       setAdmin({
-        name: storedUsername || "Aisyah Rahma",
-        email: storedEmail || "aisyahrahma@gmail.com",
+        name: storedUsername || "Admin",
+        email: storedEmail || "admin@mail.com",
         avatar: "/profilepic.jpg",
       });
     }
@@ -252,7 +252,7 @@ function SaveSuccessModal({
             position: "relative",
             display: "flex",
             alignItems: "center",
-            justifyProject: "center",
+            justifyContent: "center",
           }}
         >
           <div
@@ -377,7 +377,7 @@ function DeleteModal({
             position: "relative",
             display: "flex",
             alignItems: "center",
-            justifyProject: "center",
+            justifyContent: "center",
           }}
         >
           <div
@@ -529,7 +529,7 @@ function DeleteSuccessModal({
             position: "relative",
             display: "flex",
             alignItems: "center",
-            justifyProject: "center",
+            justifyContent: "center",
           }}
         >
           <div
@@ -837,7 +837,8 @@ function SpotForm({
         </div>
 
         {/* Description */}
-        <div style={{ marginBottom: "18px" }}>
+        {/* FIX GAMBAR 2: AppLayout diganti ke properti standar 'display' */}
+        <div style={{ display: "block", marginBottom: "18px" }}>
           <label
             style={{
               fontSize: "13px",
@@ -1232,6 +1233,20 @@ export default function ManagementSpotPage() {
   let nextId = Math.max(...spots.map((s) => s.id), 0) + 1;
 
   useEffect(() => {
+    // ─── SECURE ROUTE GUARD ADMIN (ANTI-TEMBUS USER BIASA) ───
+    const token = localStorage.getItem("token");
+    const role = localStorage.getItem("role");
+
+    if (!token || role !== "admin") {
+      localStorage.removeItem("token");
+      localStorage.removeItem("username");
+      localStorage.removeItem("email");
+      localStorage.removeItem("role");
+      localStorage.removeItem("user");
+      router.push("/auth?mode=signin");
+      return;
+    }
+
     setIsAuthorized(true);
 
     const savedSpots = localStorage.getItem("spots");
@@ -1274,7 +1289,7 @@ export default function ManagementSpotPage() {
               id: s.id,
               updatedAt: new Date().toISOString(),
             }
-          : s,
+          : s
       );
     }
 
