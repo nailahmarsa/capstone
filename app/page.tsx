@@ -185,10 +185,10 @@ export default function LandingPage() {
           <div>
             <h1 className="text-4xl md:text-5xl font-bold text-[#354e30] leading-tight">
               Find a <span className="text-[#c1697a]">Quiet Spot</span> Amid the
-              City&apos;s Hustle and Bustle
+              City's Hustle and Bustle
             </h1>
             <p className="mt-5 text-[#6b7c6a] text-base leading-relaxed max-w-md">
-              Pojok_Teduh helps you discover and share the most peaceful,
+              Pojok Teduh helps you discover and share the most peaceful,
               low-noise spots in your urban neighborhood.
             </p>
             <div className="mt-8 flex flex-wrap gap-3">
