@@ -1,51 +1,58 @@
 "use client";
+
 import { useState } from "react";
 import Image from "next/image";
 import { FaEye, FaEyeSlash } from "react-icons/fa";
+
+type AuthCardProps = {
+  isSignUp: boolean;
+  setIsSignUp: (value: boolean) => void;
+};
+
+type InputProps = {
+  label: string;
+  placeholder: string;
+  type?: string;
+};
 
 export default function Home() {
   const [isSignUp, setIsSignUp] = useState(true);
 
   return (
     <main className="relative min-h-screen flex items-center justify-center overflow-hidden">
-       {/* Background Image */}
-  <Image
-    src="/bg1.jpg" 
-    alt="background"
-    fill
-    className="object-cover blur-[2px] scale-100 brightness-90"
-  />
-    {/* Overlay */}
-  <div className="absolute inset-0 bg-white/40"></div>
+      <Image
+        src="/bg1.jpg"
+        alt="background"
+        fill
+        className="object-cover blur-[2px] scale-100 brightness-90"
+      />
 
-  <div className="relative z-10 w-full flex items-center justify-center">
-    <AuthCard isSignUp={isSignUp} setIsSignUp={setIsSignUp} />
-  </div>
+      <div className="absolute inset-0 bg-white/40" />
 
-</main>
+      <div className="relative z-10 w-full flex items-center justify-center">
+        <AuthCard isSignUp={isSignUp} setIsSignUp={setIsSignUp} />
+      </div>
+    </main>
   );
 }
 
-function AuthCard({ isSignUp, setIsSignUp }) {
+function AuthCard({ isSignUp, setIsSignUp }: AuthCardProps) {
   return (
     <div className="bg-white/95 rounded-2xl shadow-lg p-6 w-[360px] mx-auto">
-      {/* Logo */}
-     <div className="flex flex-col items-center gap-2">
-       <Image
-         src="/Group 3.png"
-         alt="logo"
-         width={60}
-         height={60}
+      <div className="flex flex-col items-center gap-2">
+        <Image
+          src="/Group 3.png"
+          alt="logo"
+          width={60}
+          height={60}
           className="object-contain"
-       />
+        />
       </div>
 
-      {/* Title */}
       <h2 className="text-center text-sm mt-4 text-[#354e30] font-semibold">
-         Welcome, Kawan Teduh!
+        Welcome, Kawan Teduh!
       </h2>
 
-      {/* Form */}
       <form className="space-y-4 mt-8">
         <Input label="Username" placeholder="Enter your username" />
         <Input label="Password" placeholder="******" type="password" />
@@ -54,12 +61,14 @@ function AuthCard({ isSignUp, setIsSignUp }) {
           Forgot password?
         </div>
 
-        <button className="w-full bg-[#354e30] text-[#ebedea] py-3 rounded-md  hover:bg-[#202f1d] transition">
-           {isSignUp ? "Sign Up" : "Sign In"}
+        <button
+          type="button"
+          className="w-full bg-[#354e30] text-[#ebedea] py-3 rounded-md hover:bg-[#202f1d] transition"
+        >
+          {isSignUp ? "Sign Up" : "Sign In"}
         </button>
       </form>
 
-      {/* Toggle */}
       <p className="text-center text-sm mt-4 text-[#354e30]">
         {isSignUp ? (
           <>
@@ -73,7 +82,7 @@ function AuthCard({ isSignUp, setIsSignUp }) {
           </>
         ) : (
           <>
-            Didn’t have an account?{" "}
+            Didn&apos;t have an account?{" "}
             <span
               className="font-semibold cursor-pointer"
               onClick={() => setIsSignUp(true)}
@@ -87,9 +96,8 @@ function AuthCard({ isSignUp, setIsSignUp }) {
   );
 }
 
-function Input({ label, placeholder, type = "text" }) {
+function Input({ label, placeholder, type = "text" }: InputProps) {
   const [show, setShow] = useState(false);
-
   const isPassword = type === "password";
 
   return (
@@ -106,12 +114,13 @@ function Input({ label, placeholder, type = "text" }) {
         />
 
         {isPassword && (
-          <span
+          <button
+            type="button"
             onClick={() => setShow(!show)}
             className="absolute right-3 top-1/2 -translate-y-1/2 cursor-pointer text-gray-500"
           >
             {show ? <FaEye /> : <FaEyeSlash />}
-          </span>
+          </button>
         )}
       </div>
     </div>
