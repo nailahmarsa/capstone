@@ -1,14 +1,34 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect, Suspense } from "react";
 import Image from "next/image";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import { FaEye, FaEyeSlash } from "react-icons/fa";
 import { ArrowLeft } from "lucide-react";
 
+// Komponen Utama yang diexport Next.js wajib membungkus dengan Suspense
 export default function AuthPage() {
-  const [isSignUp, setIsSignUp] = useState(true);
+  return (
+    <Suspense
+      fallback={
+        <div className="min-h-screen flex items-center justify-center bg-[#FAF5F0] text-sm text-[#354e30] font-medium">
+          Loading...
+        </div>
+      }
+    >
+      <AuthContent />
+    </Suspense>
+  );
+}
+
+// Seluruh logika dan konten utama dipindahkan ke sini
+function AuthContent() {
+  const searchParams = useSearchParams();
+  // Otomatis menentukan Sign Up / Sign In berdasarkan query params (?mode=signin)
+  const [isSignUp, setIsSignUp] = useState(
+    searchParams.get("mode") !== "signin",
+  );
 
   return (
     <main className="relative min-h-screen flex items-center justify-center overflow-hidden">
@@ -24,7 +44,7 @@ export default function AuthPage() {
         <div className="w-full max-w-[360px] mb-3">
           <Link
             href="/"
-            className="flex items-center gap-1.5 text-sm font-medium text-[#354e30] hover:text-[#202f1d] transition"
+            className="flex items-center gap-1.5 text-sm font-medium text-[#354e30] hover:text-[#202f1d] transition no-underline"
           >
             <ArrowLeft className="w-4 h-4" />
             Back to Home
@@ -54,8 +74,15 @@ function AuthCard({
     e.preventDefault();
     setLoading(true);
 
-    const endpoint = isSignUp ? "/auth/user/register" : "/auth/user/login";
     const baseUrl = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8080";
+    let endpoint = "";
+    const isAdminEmail = email.toLowerCase().includes("admin");
+
+    if (isSignUp) {
+      endpoint = isAdminEmail ? "/auth/admin/register" : "/auth/user/register";
+    } else {
+      endpoint = isAdminEmail ? "/auth/admin/login" : "/auth/user/login";
+    }
 
     const payload = {
       ...(isSignUp && { username }),
@@ -75,55 +102,51 @@ function AuthCard({
       const result = await response.json();
 
       if (response.ok) {
-        alert(isSignUp ? "Registrasi Berhasil!" : "Login Berhasil!");
+        if (isSignUp) {
+          alert("Registrasi Berhasil! Silakan klik Sign In untuk masuk.");
 
-        if (!isSignUp) {
+          // SINKRONISASI AWAL: Ambil nama dari input atau response data BE
+          const registeredName =
+            username || result.username || result.data?.username;
+          if (registeredName) localStorage.setItem("username", registeredName);
+          if (email) localStorage.setItem("email", email);
+
+          // Pindahkan form ke mode Sign In secara otomatis
+          setIsSignUp(false);
+        } else {
+          alert("Login Berhasil!");
+
           const token = result.token || result.data?.token;
+          const storedName = result.username || result.data?.username;
 
           if (token) {
             localStorage.setItem("token", token);
           }
+          if (storedName) {
+            localStorage.setItem("username", storedName);
+          }
+          if (email) {
+            localStorage.setItem("email", email);
+          }
 
-          const isAdmin = email.toLowerCase().includes("admin");
+          // Bersihkan sisa backup session 'user' JSON yang lama agar sinkronisasi profile fresh kembali
+          localStorage.removeItem("user");
 
-          if (isAdmin) {
-            const adminData = {
-              name: username || email.split("@")[0],
-              email,
-              avatar: "/profilepic.jpg",
-            };
-
-            localStorage.setItem("admin", JSON.stringify(adminData));
-
+          if (isAdminEmail) {
+            localStorage.setItem("role", "admin");
             router.push("/admin");
           } else {
-            const userData = {
-              username: username || email.split("@")[0],
-              email,
-              avatar: "/default-pfp.jpg",
-            };
-
-            localStorage.setItem("user", JSON.stringify(userData));
-
+            localStorage.setItem("role", "user");
             router.push("/dashboard");
           }
-        } else {
-          const userData = {
-            username,
-            email,
-            avatar: "/default-pfp.jpg",
-          };
-
-          localStorage.setItem("user", JSON.stringify(userData));
-
-          setIsSignUp(false);
         }
       } else {
         alert("Gagal: " + (result.message || "Data tidak valid"));
       }
     } catch (error) {
-      console.error(error);
-      alert("Koneksi gagal ke backend!");
+      alert(
+        "Koneksi gagal ke backend! Pastikan server BE port 8080 sudah menyala.",
+      );
     } finally {
       setLoading(false);
     }
@@ -180,13 +203,13 @@ function AuthCard({
         <button
           type="submit"
           disabled={loading}
-          className="w-full bg-[#354e30] text-[#ebedea] py-3 rounded-md hover:bg-[#202f1d] transition font-medium mt-2 disabled:opacity-50"
+          className="w-full bg-[#354e30] text-[#ebedea] py-3 rounded-md hover:bg-[#202f1d] transition font-medium mt-2 disabled:opacity-50 border-none cursor-pointer"
         >
           {loading ? "Memproses..." : isSignUp ? "Sign Up" : "Sign In"}
         </button>
       </form>
 
-      <p className="text-center text-sm mt-4 text-[#354e30]">
+      <div className="text-center text-sm mt-4 text-[#354e30]">
         {isSignUp ? (
           <>
             Have an account?{" "}
@@ -208,7 +231,7 @@ function AuthCard({
             </span>
           </>
         )}
-      </p>
+      </div>
     </div>
   );
 }
@@ -242,14 +265,14 @@ function Input({
           value={value}
           onChange={onChange}
           required
-          className="w-full bg-gray-100 text-black rounded-md px-3 py-2 pr-10 outline-none text-sm placeholder:text-gray-400 focus:ring-1 focus:ring-[#354e30] transition"
+          className="w-full bg-gray-100 text-black rounded-md px-3 py-2 pr-10 outline-none text-sm placeholder:text-gray-400 focus:ring-1 focus:ring-[#354e30] transition border-none"
         />
 
         {isPassword && (
           <button
             type="button"
             onClick={() => setShow(!show)}
-            className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-500 hover:text-[#354e30] transition-colors focus:outline-none"
+            className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-500 hover:text-[#354e30] transition-colors focus:outline-none bg-transparent border-none cursor-pointer"
           >
             {show ? <FaEye size={16} /> : <FaEyeSlash size={16} />}
           </button>

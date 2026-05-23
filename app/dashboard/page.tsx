@@ -102,9 +102,7 @@ const facilitiesOptions = [
 const crowdednessOptions = ["Low", "High"];
 
 function timeAgo(dateString: string, now: number) {
-  const seconds = Math.floor(
-    (now - new Date(dateString).getTime()) / 1000
-  );
+  const seconds = Math.floor((now - new Date(dateString).getTime()) / 1000);
 
   const minutes = Math.floor(seconds / 60);
   const hours = Math.floor(seconds / 3600);
@@ -130,7 +128,7 @@ export default function DashboardPage() {
   const dragDistance = useRef(0);
 
   const [isAuthorized, setIsAuthorized] = useState(false);
-  const [userAvatar, setUserAvatar] = useState("/default-pfp.jpg");
+  const [userInitial, setUserInitial] = useState("K");
   const [recentViewed, setRecentViewed] = useState<any[]>([]);
 
   const [isSearchOpen, setIsSearchOpen] = useState(false);
@@ -148,29 +146,52 @@ export default function DashboardPage() {
     return () => clearInterval(interval);
   }, []);
 
- useEffect(() => {
-  const token = localStorage.getItem("token");
+  useEffect(() => {
+    // ─── 1. SECURE ROUTE GUARD: CEK TOKEN & ROLE VALID BE ───
+    const token = localStorage.getItem("token");
+    const role = localStorage.getItem("role");
 
-    if (!token) {
-      router.push("/auth");
+    if (!token || role === "admin") {
+      localStorage.removeItem("token");
+      localStorage.removeItem("username");
+      localStorage.removeItem("email");
+      localStorage.removeItem("role");
+      localStorage.removeItem("user");
+      router.push("/auth?mode=signin");
       return;
     }
 
+    // Jika token valid untuk user view, buka proteksi render
     setIsAuthorized(true);
 
+    // ─── 2. SINKRONISASI USER INITIAL SECARA INTERAKTIF ───
+    const storedUsername = localStorage.getItem("username");
+    const storedEmail = localStorage.getItem("email");
     const savedUser = localStorage.getItem("user");
 
-    if (savedUser) {
-      const userData = JSON.parse(savedUser);
+    let finalName = "";
 
-      setUserAvatar(
-        userData.avatar || "/default-pfp.jpg"
-      );
+    if (storedUsername) {
+      finalName = storedUsername;
+    } else if (savedUser) {
+      try {
+        const userData = JSON.parse(savedUser);
+        if (userData.username) finalName = userData.username;
+      } catch (e) {
+        console.error("Error parsing user object inside dashboard", e);
+      }
+    } else if (storedEmail) {
+      finalName = storedEmail.split("@")[0];
     }
 
-    const savedRecent =
-      localStorage.getItem("recentViewed");
+    if (finalName) {
+      setUserInitial(finalName.charAt(0).toUpperCase());
+    } else {
+      setUserInitial("K");
+    }
 
+    // ─── 3. SINKRONISASI RECENT HISTORY & SPOTS RE-FETCH ───
+    const savedRecent = localStorage.getItem("recentViewed");
     if (savedRecent) {
       setRecentViewed(JSON.parse(savedRecent));
     } else {
@@ -178,82 +199,88 @@ export default function DashboardPage() {
     }
 
     const savedSpots = localStorage.getItem("spots");
-
     if (savedSpots) {
-      const adminSpots = JSON.parse(savedSpots).map(
-        (spot: any) => ({
-          id: spot.id,
-          slug: spot.name
-            .toLowerCase()
-            .replaceAll(" ", "-"),
+      const adminSpots = JSON.parse(savedSpots).map((spot: any) => ({
+        id: spot.id,
+        slug: spot.name.toLowerCase().replaceAll(" ", "-"),
+        name: spot.name,
+        type: spot.category,
+        rating: 4.8,
+        ratingIcon: "/beaming-black.png",
+        image: spot.img || "/gowork.png",
+        description: spot.description,
+      }));
 
-          name: spot.name,
-          type: spot.category,
-          rating: 4.8,
-          ratingIcon: "/beaming-black.png",
-          image: spot.img,
-          description: spot.description,
-        })
-      );
-
-      setDisplayPlaces([
-        ...adminSpots,
-        ...places,
-      ]);
+      setDisplayPlaces([...adminSpots, ...places]);
     }
 
     fetch("/data/places.json")
       .then((res) => res.json())
       .then((data) => {
-        const placesArray = Object.keys(data).map(
-          (slug) => ({
-            slug,
-            ...data[slug],
-          })
-        );
-
+        const placesArray = Object.keys(data).map((slug) => ({
+          slug,
+          ...data[slug],
+        }));
         setAllPlaces(placesArray);
       })
       .catch((err) => console.error(err));
   }, [router]);
 
   const handleSearchExecute = () => {
-    const match = allPlaces.find((p) =>
-      p.name.toLowerCase().includes(searchQuery.toLowerCase())
-    );
+    const matchedSlugs = allPlaces
+      .filter((place) => {
+        const tagsLower = place.tags
+          ? place.tags.map((t: string) => t.toLowerCase())
+          : [];
 
-    if (match && searchQuery !== "") {
-      router.push(`/dashboard/card-spot/${match.slug}`);
-      setIsSearchOpen(false);
-    } else {
-      const params = new URLSearchParams();
+        const nameMatch =
+          !searchQuery ||
+          place.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+          place.type.toLowerCase().includes(searchQuery.toLowerCase());
 
-      if (searchQuery) params.set("q", searchQuery);
-      if (selectedFacilities.length)
-        params.set("facilities", selectedFacilities.join(","));
-      if (selectedCrowdedness.length)
-        params.set("crowdedness", selectedCrowdedness.join(","));
+        const facilityMatch =
+          selectedFacilities.length === 0 ||
+          selectedFacilities.some((f) => {
+            if (f === "Groups") return tagsLower.includes("group");
+            return tagsLower.includes(f.toLowerCase());
+          });
 
-      router.push(`/dashboard/results?${params.toString()}`);
-      setIsSearchOpen(false);
+        const crowdMatch =
+          selectedCrowdedness.length === 0 ||
+          selectedCrowdedness.some((c) => tagsLower.includes(c.toLowerCase()));
+
+        return nameMatch && facilityMatch && crowdMatch;
+      })
+      .map((p) => p.slug);
+
+    const params = new URLSearchParams();
+
+    if (searchQuery) params.set("q", searchQuery);
+    if (selectedFacilities.length)
+      params.set("facilities", selectedFacilities.join(","));
+    if (selectedCrowdedness.length)
+      params.set("crowdedness", selectedCrowdedness.join(","));
+    if (matchedSlugs.length) {
+      params.set("slugs", matchedSlugs.join(","));
     }
+
+    setIsSearchOpen(false);
+    router.push(`/dashboard/results?${params.toString()}`);
   };
 
   const toggleFilter = (
     item: string,
     state: string[],
-    setState: (v: string[]) => void
+    setState: (v: string[]) => void,
   ) => {
     setState(
-      state.includes(item)
-        ? state.filter((i) => i !== item)
-        : [...state, item]
+      state.includes(item) ? state.filter((i) => i !== item) : [...state, item],
     );
   };
 
   const onMouseDown = (
     e: React.MouseEvent,
-    ref: React.RefObject<HTMLDivElement | null>
+    ref: React.RefObject<HTMLDivElement | null>,
   ) => {
     isDragging.current = true;
     dragDistance.current = 0;
@@ -263,7 +290,7 @@ export default function DashboardPage() {
 
   const onMouseMove = (
     e: React.MouseEvent,
-    ref: React.RefObject<HTMLDivElement | null>
+    ref: React.RefObject<HTMLDivElement | null>,
   ) => {
     if (!isDragging.current || !ref.current) return;
 
@@ -348,13 +375,11 @@ export default function DashboardPage() {
 
           <div
             onClick={() => router.push("/dashboard/profile")}
-            className="w-9 h-9 rounded-full bg-[#c5a98e] overflow-hidden border border-white/20 cursor-pointer"
+            className="w-9 h-9 rounded-full bg-[#c5a98e] flex items-center justify-center border border-white/20 cursor-pointer animate-fade-in"
           >
-            <img
-              src={userAvatar}
-              alt="profile"
-              className="w-full h-full object-cover"
-            />
+            <span className="text-white text-xs font-bold tracking-wide">
+              {userInitial}
+            </span>
           </div>
         </div>
       </div>
@@ -377,7 +402,7 @@ export default function DashboardPage() {
                 onChange={(e) => setSearchQuery(e.target.value)}
                 onKeyDown={(e) => e.key === "Enter" && handleSearchExecute()}
                 placeholder="Find your quiet spot..."
-                className="w-full px-6 py-3 rounded-full bg-[#f5f5f5] text-sm outline-none placeholder:text-gray-400 placeholder:italic"
+                className="w-full px-6 py-3 rounded-full bg-[#f5f5f5] text-sm outline-none placeholder:text-gray-400 placeholder:italic text-gray-800"
               />
 
               <Search
@@ -399,13 +424,13 @@ export default function DashboardPage() {
                       toggleFilter(
                         item,
                         selectedFacilities,
-                        setSelectedFacilities
+                        setSelectedFacilities,
                       )
                     }
                     className={`px-5 py-1.5 rounded-full border text-[12px] transition-all duration-200 ${
                       selectedFacilities.includes(item)
                         ? "bg-[#354e30] text-white border-[#354e30]"
-                        : "bg-white text-gray-500 border-gray-300"
+                        : "bg-white text-gray-500 border-gray-300 hover:border-[#354e30] hover:text-[#354e30]"
                     }`}
                   >
                     {item}
@@ -427,13 +452,13 @@ export default function DashboardPage() {
                       toggleFilter(
                         item,
                         selectedCrowdedness,
-                        setSelectedCrowdedness
+                        setSelectedCrowdedness,
                       )
                     }
                     className={`px-8 py-1.5 rounded-full border text-[12px] transition-all duration-200 ${
                       selectedCrowdedness.includes(item)
                         ? "bg-[#354e30] text-white border-[#354e30]"
-                        : "bg-white text-gray-500 border-gray-300"
+                        : "bg-white text-gray-500 border-gray-300 hover:border-[#354e30] hover:text-[#354e30]"
                     }`}
                   >
                     {item}
@@ -503,7 +528,7 @@ export default function DashboardPage() {
               <div
                 key={`${place.slug}-${place.id}`}
                 onClick={() => handleCardClick(place)}
-                className="min-w-[220px] bg-white rounded-2xl shadow-sm p-3 hover:shadow-md transition-shadow"
+                className="min-w-[220px] bg-white rounded-2xl shadow-sm p-3 hover:shadow-md transition-shadow cursor-pointer"
               >
                 <div className="relative rounded-xl overflow-hidden h-[130px]">
                   <Image
@@ -514,7 +539,7 @@ export default function DashboardPage() {
                   />
 
                   <div className="absolute bottom-2 left-2 right-2 flex justify-between items-center backdrop-blur-md bg-white/30 border border-white/20 rounded-lg px-2 py-1 text-[10px] font-bold text-black">
-                    <span>{place.type}</span>
+                    <span className="capitalize">{place.type}</span>
 
                     <span className="flex items-center gap-1">
                       <Image
@@ -533,8 +558,8 @@ export default function DashboardPage() {
                 </h3>
 
                 <p className="text-[11px] text-gray-400 mt-1 line-clamp-2">
-                  A cozy spot with a relaxed atmosphere—perfect for taking a
-                  quick break.
+                  {place.description ||
+                    "A cozy spot with a relaxed atmosphere—perfect for taking a quick break."}
                 </p>
               </div>
             ))}
@@ -560,15 +585,16 @@ export default function DashboardPage() {
               <div
                 key={place.slug}
                 onClick={() => handleCardClick(place)}
-                className="min-w-[300px] bg-white rounded-2xl shadow-sm p-3 flex items-center gap-3 hover:shadow-md transition-shadow"
+                className="min-w-[300px] bg-white rounded-2xl shadow-sm p-3 flex items-center gap-3 hover:shadow-md transition-shadow cursor-pointer"
               >
-                <Image
-                  src={place.image}
-                  alt={place.name}
-                  width={80}
-                  height={80}
-                  className="rounded-xl object-cover"
-                />
+                <div className="w-[80px] h-[80px] relative rounded-xl overflow-hidden shrink-0">
+                  <Image
+                    src={place.image}
+                    alt={place.name}
+                    fill
+                    className="object-cover"
+                  />
+                </div>
 
                 <div className="flex-1 min-w-0">
                   <h3 className="font-bold text-sm text-[#2f4b2f] truncate">

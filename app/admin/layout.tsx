@@ -114,12 +114,8 @@ export default function AdminLayout({
                     textDecoration: "none",
                     fontSize: "13px",
                     fontWeight: isActive ? "600" : "500",
-                    color: isActive
-                      ? "#314D31"
-                      : "rgba(255,255,255,0.90)",
-                    backgroundColor: isActive
-                      ? "#E7EAE4"
-                      : "transparent",
+                    color: isActive ? "#314D31" : "rgba(255,255,255,0.90)",
+                    backgroundColor: isActive ? "#E7EAE4" : "transparent",
                     borderTopRightRadius: "12px",
                     borderBottomRightRadius: "12px",
                     marginRight: "0px",

@@ -5,21 +5,21 @@ import { ArrowLeft, Bookmark, Clock, ArrowRight } from "lucide-react";
 import { useRouter, useParams } from "next/navigation";
 import { useState, useEffect } from "react";
 
-// ── DATA DAFTAR REVIEW ──
+// ── DATA DAFTAR REVIEW INITIAL (AMAN DARI RUNTIME ERROR SERVER) ──
 const DEFAULT_REVIEWS = [
   {
     id: 1,
-    name: localStorage.getItem("username") || "User",
+    name: "User",
     text: "Absolutely love this spot for morning coding sessions.",
   },
   {
     id: 2,
-    name: localStorage.getItem("username") || "User",
+    name: "User",
     text: "Very peaceful and comfortable atmosphere.",
   },
   {
     id: 3,
-    name: localStorage.getItem("username") || "User",
+    name: "User",
     text: "One of my favorite places to focus and unwind at the same time. Definitely recommended for students and remote workers looking for calm spaces.",
   },
 ];
@@ -63,15 +63,28 @@ function ReviewModal({
   const [rating, setRating] = useState<number | null>(null);
   const [text, setText] = useState("");
   const [submitted, setSubmitted] = useState(false);
+  const [userData, setUserData] = useState<any>(null);
 
-  const savedUser = localStorage.getItem("user");
-  const userData = savedUser ? JSON.parse(savedUser) : null;
+  useEffect(() => {
+    const savedUser = localStorage.getItem("user");
+    if (savedUser) {
+      try {
+        setUserData(JSON.parse(savedUser));
+      } catch (e) {
+        console.error(e);
+      }
+    }
+  }, []);
+
   const handleSubmit = () => {
     if (!rating || !text.trim()) return;
 
+    const currentUsername =
+      localStorage.getItem("username") || userData?.username || "User";
+
     onSubmitReview({
       id: Date.now(),
-      name: userData?.username || "User",
+      name: currentUsername,
       text,
       rating,
     });
@@ -87,7 +100,7 @@ function ReviewModal({
       <div className="bg-white rounded-[24px] p-10 w-full max-w-[500px] relative shadow-2xl animate-in zoom-in-95 duration-200">
         <button
           onClick={onClose}
-          className="absolute top-5 right-5 text-gray-400 hover:text-gray-600 text-xl"
+          className="absolute top-5 right-5 text-gray-400 hover:text-gray-600 text-xl bg-transparent border-none cursor-pointer"
         >
           ✕
         </button>
@@ -107,7 +120,7 @@ function ReviewModal({
                 <button
                   key={e.val}
                   onClick={() => setRating(e.val)}
-                  className={`w-12 h-12 flex items-center justify-center transition-all duration-200 ${
+                  className={`w-12 h-12 flex items-center justify-center bg-transparent border-none cursor-pointer transition-all duration-200 ${
                     rating === e.val
                       ? "scale-125 opacity-100"
                       : "opacity-40 hover:opacity-70"
@@ -136,7 +149,7 @@ function ReviewModal({
                 <button
                   onClick={handleSubmit}
                   disabled={!rating || !text.trim()}
-                  className="bg-[#2f4b2f] text-white text-[13px] font-bold px-6 py-2.5 rounded-xl hover:bg-[#3d6b3d] disabled:opacity-40 transition-all"
+                  className="bg-[#2f4b2f] text-white text-[13px] font-bold px-6 py-2.5 rounded-xl hover:bg-[#3d6b3d] disabled:opacity-40 transition-all border-none cursor-pointer"
                 >
                   Submit
                 </button>
@@ -221,30 +234,38 @@ export default function SpotDetailPage() {
                   closed: false,
                 },
               ],
-              mapLink: `https://www.google.com/maps/search/?api=1&query=${foundSpot.coordinates}`,
+              mapLink: `http://maps.google.com/?q=${foundSpot.coordinates}`,
             });
           }
         }
       })
+      .catch((err) => console.error(err))
       .finally(() => setLoading(false));
   }, [slug]);
 
-    useEffect(() => {
-      const stored = localStorage.getItem("bookmarks");
+  useEffect(() => {
+    const stored = localStorage.getItem("bookmarks");
 
-      if (stored) {
-        const bookmarks = JSON.parse(stored);
-        setIsBookmarked(bookmarks.some((b: any) => b.slug === slug));
-      }
-    }, [slug]);
+    if (stored) {
+      const bookmarks = JSON.parse(stored);
+      setIsBookmarked(bookmarks.some((b: any) => b.slug === slug));
+    }
+  }, [slug]);
 
   useEffect(() => {
+    // ─── AMBIL & SINKRONISASI AKUN SECARA AMAN DI CLIENT-SIDE ───
     const storedReviews = localStorage.getItem(`reviews-${slug}`);
+    const activeUsername = localStorage.getItem("username") || "User";
 
     if (storedReviews) {
       setReviews(JSON.parse(storedReviews));
     } else {
-      setReviews(DEFAULT_REVIEWS);
+      // Perbarui nama di default review dengan username login saat ini secara dinamis
+      const localizedDefault = DEFAULT_REVIEWS.map((r) => ({
+        ...r,
+        name: activeUsername,
+      }));
+      setReviews(localizedDefault);
     }
   }, [slug]);
 
@@ -262,7 +283,7 @@ export default function SpotDetailPage() {
     } else {
       localStorage.setItem(
         "bookmarks",
-        JSON.stringify([...bookmarks, { slug, ...place }])
+        JSON.stringify([...bookmarks, { slug, ...place }]),
       );
 
       setIsBookmarked(true);
@@ -271,9 +292,7 @@ export default function SpotDetailPage() {
 
   const handleAddReview = (review: any) => {
     const updatedReviews = [review, ...reviews];
-
     setReviews(updatedReviews);
-
     localStorage.setItem(`reviews-${slug}`, JSON.stringify(updatedReviews));
   };
 
@@ -304,7 +323,7 @@ export default function SpotDetailPage() {
       {/* HERO SECTION */}
       <div className="relative w-full h-[260px]">
         <Image
-          src={place.image}
+          src={place.image || "/gowork.png"}
           alt={place.name}
           fill
           className="object-cover"
@@ -317,7 +336,7 @@ export default function SpotDetailPage() {
           <div className="flex items-center gap-3 ml-1">
             <button
               onClick={() => router.back()}
-              className="w-9 h-9 rounded-full bg-white flex items-center justify-center shadow-sm hover:bg-[#2f4b2f] group transition-all"
+              className="w-9 h-9 rounded-full bg-white flex items-center justify-center shadow-sm hover:bg-[#2f4b2f] group transition-all border-none cursor-pointer"
             >
               <ArrowLeft
                 size={18}
@@ -332,7 +351,7 @@ export default function SpotDetailPage() {
 
           <button
             onClick={toggleBookmark}
-            className="w-9 h-9 rounded-full bg-white flex items-center justify-center mr-1 shadow-sm"
+            className="w-9 h-9 rounded-full bg-white flex items-center justify-center mr-1 shadow-sm border-none cursor-pointer"
           >
             <Bookmark
               size={17}
@@ -360,7 +379,12 @@ export default function SpotDetailPage() {
           </h1>
 
           <div className="flex items-center gap-1.5 mt-1 flex-shrink-0 ml-3">
-            <Image src={place.ratingIcon} alt="rating" width={18} height={18} />
+            <Image
+              src={place.ratingIcon || "/beaming-black.png"}
+              alt="rating"
+              width={18}
+              height={18}
+            />
 
             <span className="font-bold text-[#2f4b2f] text-[14px]">
               {place.rating}
@@ -374,43 +398,46 @@ export default function SpotDetailPage() {
 
         <div className="flex gap-4 mt-5 items-start">
           <div className="flex flex-wrap gap-2.5 flex-1">
-            {place.tags.map((tag: string) => (
-              <span
-                key={tag}
-                className="px-4 py-1.5 rounded-full bg-[#2f4b2f]/10 text-[#2f4b2f] text-[12px] font-bold"
-              >
-                {tag}
-              </span>
-            ))}
-          </div>
-
-          <div className="bg-white rounded-2xl p-4 min-w-[170px] border border-[#2f4b2f]/20">
-            <div className="flex items-center gap-1.5 mb-3 text-[12px] font-bold text-[#2f4b2f]">
-              <Clock size={13} /> Operating Hours
-            </div>
-
-            {place.hours.map((item: any) => (
-              <div
-                key={item.day}
-                className="flex justify-between items-center mb-1.5 text-[11px]"
-              >
-                <span className="text-gray-400">{item.day}</span>
-
+            {place.tags &&
+              place.tags.map((tag: string) => (
                 <span
-                  className={`font-bold ${
-                    item.closed ? "text-[#A36065]" : "text-[#2f4b2f]"
-                  }`}
+                  key={tag}
+                  className="px-4 py-1.5 rounded-full bg-[#2f4b2f]/10 text-[#2f4b2f] text-[12px] font-bold"
                 >
-                  {item.hours}
+                  {tag}
                 </span>
-              </div>
-            ))}
+              ))}
           </div>
+
+          {place.hours && (
+            <div className="bg-white rounded-2xl p-4 min-w-[170px] border border-[#2f4b2f]/20">
+              <div className="flex items-center gap-1.5 mb-3 text-[12px] font-bold text-[#2f4b2f]">
+                <Clock size={13} /> Operating Hours
+              </div>
+
+              {place.hours.map((item: any) => (
+                <div
+                  key={item.day}
+                  className="flex justify-between items-center mb-1.5 text-[11px]"
+                >
+                  <span className="text-gray-400">{item.day}</span>
+
+                  <span
+                    className={`font-bold ${
+                      item.closed ? "text-[#A36065]" : "text-[#2f4b2f]"
+                    }`}
+                  >
+                    {item.hours}
+                  </span>
+                </div>
+              ))}
+            </div>
+          )}
         </div>
 
         <button
           onClick={() => window.open(place.mapLink, "_blank")}
-          className="mt-6 mb-12 flex items-center gap-2 bg-[#2f4b2f] text-white text-sm font-bold px-6 py-2.5 rounded-xl hover:bg-[#3d6b3d] transition-all"
+          className="mt-6 mb-12 flex items-center gap-2 bg-[#2f4b2f] text-white text-sm font-bold px-6 py-2.5 rounded-xl hover:bg-[#3d6b3d] transition-all border-none cursor-pointer"
         >
           Go There <ArrowRight size={16} />
         </button>
@@ -422,10 +449,9 @@ export default function SpotDetailPage() {
 
           <button
             onClick={() => setShowReview(true)}
-            className="flex items-center gap-1.5 bg-[#2f4b2f] text-white text-[11px] font-bold px-4 py-2 rounded-xl hover:bg-[#3d6b3d] transition-all"
+            className="flex items-center gap-1.5 bg-[#2f4b2f] text-white text-[11px] font-bold px-4 py-2 rounded-xl hover:bg-[#3d6b3d] transition-all border-none cursor-pointer"
           >
             Write a Review
-
             <svg
               width="12"
               height="12"
@@ -446,16 +472,17 @@ export default function SpotDetailPage() {
               key={review.id}
               className="bg-white rounded-[24px] p-4 shadow-sm flex gap-3 items-start border border-gray-50"
             >
-              <div className="w-10 h-10 rounded-full bg-[#c5a98e] flex items-center justify-center text-white text-xs font-bold">
-                A
+              {/* FIX INITIAL BULATAN DINAMIS MENGIKUTI NAMA REVIEWER */}
+              <div className="w-10 h-10 rounded-full bg-[#c5a98e] flex items-center justify-center text-white text-xs font-bold shrink-0">
+                {review.name ? review.name.charAt(0).toUpperCase() : "U"}
               </div>
 
-              <div className="flex-1">
-                <p className="font-bold text-[13px] text-[#2f4b2f]">
+              <div className="flex-1 min-w-0">
+                <p className="font-bold text-[13px] text-[#2f4b2f] truncate">
                   {review.name}
                 </p>
 
-                <p className="text-[12px] text-gray-400 mt-0.5 leading-relaxed font-medium">
+                <p className="text-[12px] text-gray-400 mt-0.5 leading-relaxed font-medium break-words">
                   {review.text}
                 </p>
               </div>

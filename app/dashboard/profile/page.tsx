@@ -8,41 +8,90 @@ import { ArrowLeft, UserCog, Pencil, LogOut, X, Save } from "lucide-react";
 export default function ProfilePage() {
   const router = useRouter();
 
-  const [username, setUsername] = useState("");
-  const [email, setEmail] = useState("");
+  const [username, setUsername] = useState("Kawan Teduh");
+  const [email, setEmail] = useState("kawanteduh@mail.com");
   const [imgError, setImgError] = useState(false);
   const [historyReviews, setHistoryReviews] = useState<any[]>([]);
-   const [avatar, setAvatar] = useState("/default-pfp.jpg");
-   const fileInputRef = useRef<HTMLInputElement>(null);
+  const [avatar, setAvatar] = useState("/default-pfp.jpg");
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   const [editing, setEditing] = useState(false);
   const [draftUsername, setDraftUsername] = useState("");
   const [draftEmail, setDraftEmail] = useState("");
+  const [isAuthorized, setIsAuthorized] = useState(false);
 
   useEffect(() => {
+    // ─── 1. SECURE ROUTE GUARD: CEK TOKEN & ROLE VALID BE ───
+    const token = localStorage.getItem("token");
+    const role = localStorage.getItem("role");
+
+    if (!token || role === "admin") {
+      localStorage.removeItem("token");
+      localStorage.removeItem("username");
+      localStorage.removeItem("email");
+      localStorage.removeItem("role");
+      localStorage.removeItem("user");
+      router.push("/auth?mode=signin");
+      return;
+    }
+
+    // Jika token valid untuk user view, buka proteksi render halaman
+    setIsAuthorized(true);
+
+    // ─── 2. MEMBACA EMAIL & USERNAME REGISTERED SECARA TEPAT KETIKA MOUNT ───
+    const storedUsername = localStorage.getItem("username");
+    const storedEmail = localStorage.getItem("email");
     const savedUser = localStorage.getItem("user");
 
+    let currentName = "Kawan Teduh";
+    let currentEmail = "kawanteduh@mail.com";
+    let currentAvatar = "/default-pfp.jpg";
+
+    // Cek dari object 'user' JSON dahulu jika ada
     if (savedUser) {
-      const userData = JSON.parse(savedUser);
-
-      setUsername(userData.username);
-      setEmail(userData.email);
-      setAvatar(userData.avatar || "/default-pfp.jpg");
-
-      setDraftUsername(userData.username);
-      setDraftEmail(userData.email);
+      try {
+        const userData = JSON.parse(savedUser);
+        if (userData.username) currentName = userData.username;
+        if (userData.email) currentEmail = userData.email;
+        if (userData.avatar) currentAvatar = userData.avatar;
+      } catch (e) {
+        console.error("Error parsing user data", e);
+      }
     }
-  }, []);
+
+    // Timpa dengan individual key 'username' & 'email' jika tersedia (Registered Data)
+    if (storedUsername) currentName = storedUsername;
+    if (storedEmail) currentEmail = storedEmail;
+
+    // Set state utama
+    setUsername(currentName);
+    setEmail(currentEmail);
+    setAvatar(currentAvatar);
+
+    // Set draft form agar sinkron saat tombol edit ditekan
+    setDraftUsername(currentName);
+    setDraftEmail(currentEmail);
+  }, [router]);
 
   useEffect(() => {
+    // Hanya ambil data review jika user lolos validasi route guard
+    const token = localStorage.getItem("token");
+    const role = localStorage.getItem("role");
+    if (!token || role === "admin") return;
+
+    // ─── MEMBACA HISTORY REVIEWS SECARA DINAMIS DARI LOCALSTORAGE ───
     const allReviews: any[] = [];
 
     for (let i = 0; i < localStorage.length; i++) {
       const key = localStorage.key(i);
 
       if (key && key.startsWith("reviews-")) {
-        const reviews = JSON.parse(localStorage.getItem(key) || "[]");
-        allReviews.push(...reviews);
+        try {
+          const reviews = JSON.parse(localStorage.getItem(key) || "[]");
+          allReviews.push(...reviews);
+        } catch (e) {
+          console.error(e);
+        }
       }
     }
 
@@ -57,15 +106,16 @@ export default function ProfilePage() {
 
     reader.onload = (e) => {
       const result = e.target?.result as string;
-
       setAvatar(result);
+      setImgError(false);
 
       const savedUser = localStorage.getItem("user");
       const userData = savedUser ? JSON.parse(savedUser) : {};
 
       const updatedUser = {
-        username: userData.username || username || "",
-        email: userData.email || email || "",
+        ...userData,
+        username: localStorage.getItem("username") || username,
+        email: localStorage.getItem("email") || email,
         avatar: result,
       };
 
@@ -74,8 +124,13 @@ export default function ProfilePage() {
 
     reader.readAsDataURL(file);
   };
+
   const handleLogout = () => {
     localStorage.removeItem("token");
+    localStorage.removeItem("username");
+    localStorage.removeItem("email");
+    localStorage.removeItem("role");
+    localStorage.removeItem("user");
     router.push("/");
   };
 
@@ -88,11 +143,11 @@ export default function ProfilePage() {
   }) => (
     <div
       onClick={() => fileInputRef.current?.click()}
-      className={`${sizeClasses} flex-shrink-0 bg-[#c5a98e] flex items-center justify-center rounded-3xl overflow-hidden cursor-pointer`}
+      className={`${sizeClasses} flex-shrink-0 bg-[#c5a98e] flex items-center justify-center rounded-3xl overflow-hidden cursor-pointer shadow-inner`}
     >
-      {imgError ? (
+      {imgError || !avatar ? (
         <span className={`${textClass} font-bold text-white uppercase`}>
-          {username.charAt(0)}
+          {username ? username.charAt(0) : "K"}
         </span>
       ) : (
         <Image
@@ -107,6 +162,8 @@ export default function ProfilePage() {
     </div>
   );
 
+  if (!isAuthorized) return null;
+
   return (
     <div
       className="min-h-screen"
@@ -116,11 +173,12 @@ export default function ProfilePage() {
           "linear-gradient(180deg, #f5c6cb 0%, #fbe8ea 30%, #fdf0f1 100%)",
       }}
     >
+      {/* HEADER */}
       <div className="px-10 pt-8 pb-4">
-        <div className="flex items-center gap-4 bg-white/70 backdrop-blur-md rounded-full px-4 py-2.5 shadow-sm border border-white/20">
+        <div className="flex items-center gap-4 bg-white/70 backdrop-blur-md rounded-full p-2 pr-10 shadow-sm border border-white/20">
           <button
             onClick={() => router.back()}
-            className="w-10 h-10 rounded-full bg-white flex items-center justify-center shadow-sm flex-shrink-0 transition-all duration-300 hover:bg-[#2f4b2f] group"
+            className="w-10 h-10 rounded-full bg-white flex items-center justify-center shadow-sm flex-shrink-0 transition-all duration-300 hover:bg-[#2f4b2f] group border-none cursor-pointer"
           >
             <ArrowLeft
               size={20}
@@ -133,10 +191,11 @@ export default function ProfilePage() {
         </div>
       </div>
 
+      {/* MAIN CONTAINER */}
       <div className="max-w-5xl mx-auto px-10">
         <div className="mt-8">
-          <div className="flex items-center justify-between gap-6">
-            <div className="flex items-center gap-6">
+          <div className="flex flex-col sm:flex-row items-center sm:justify-between gap-6 bg-white/40 p-6 rounded-3xl border border-white/30 backdrop-blur-sm">
+            <div className="flex flex-col sm:flex-row items-center gap-6 text-center sm:text-left w-full min-w-0">
               <input
                 ref={fileInputRef}
                 type="file"
@@ -152,58 +211,48 @@ export default function ProfilePage() {
                 textClass="text-4xl"
               />
 
-              <div>
+              <div className="min-w-0 flex-1 w-full">
                 {editing ? (
-                  <div className="flex flex-col gap-3">
+                  <div className="flex flex-col gap-2.5 max-w-sm mx-auto sm:mx-0">
                     <input
+                      type="text"
                       value={draftUsername}
                       onChange={(e) => setDraftUsername(e.target.value)}
-                      className="bg-white/80 rounded-xl px-4 py-2 text-sm outline-none border border-white/60 text-[#1f2937]"
+                      className="w-full bg-white/90 rounded-xl px-4 py-2.5 text-sm outline-none border border-gray-200 text-[#1f2937] focus:border-[#2f4b2f] transition-all"
                       placeholder="Username"
                     />
                     <input
+                      type="email"
                       value={draftEmail}
                       onChange={(e) => setDraftEmail(e.target.value)}
-                      className="bg-white/80 rounded-xl px-4 py-2 text-sm outline-none border border-white/60 text-[#1f2937]"
+                      className="w-full bg-white/90 rounded-xl px-4 py-2.5 text-sm outline-none border border-gray-200 text-[#1f2937] focus:border-[#2f4b2f] transition-all"
                       placeholder="Email"
                     />
                   </div>
                 ) : (
-                  <>
-                    <h2 className="text-2xl font-extrabold text-[#1f2937]">
+                  <div className="truncate">
+                    <h2 className="text-2xl font-extrabold text-[#1f2937] truncate">
                       {username}
                     </h2>
-                    <p className="text-sm text-gray-500 mt-1 font-medium">
+                    <p className="text-sm text-gray-500 mt-1 font-medium truncate">
                       {email}
                     </p>
-                  </>
+                  </div>
                 )}
               </div>
             </div>
 
-            <div className="flex flex-col items-end gap-3">
-              <button className="p-1 transition-colors duration-300 text-[#1f2937] hover:text-[#c1697a]">
+            {/* BUTTON CONTROLS */}
+            <div className="flex flex-row sm:flex-col items-center sm:items-end gap-3 shrink-0">
+              <button className="p-1 transition-colors duration-300 text-[#1f2937] hover:text-[#c1697a] bg-transparent border-none cursor-pointer">
                 <UserCog size={28} />
               </button>
 
               {editing ? (
                 <div className="flex gap-2">
                   <button
-                    onClick={() => {
-                      const updatedUser = {
-                        username: draftUsername,
-                        email: draftEmail,
-                        avatar: "/default-pfp.jpg",
-                      };
-
-                      setUsername(updatedUser.username);
-                      setEmail(updatedUser.email);
-
-                      localStorage.setItem("user", JSON.stringify(updatedUser));
-
-                      setEditing(false);
-                    }}
-                    className="flex items-center gap-2 bg-white/70 text-[#1f2937] text-sm font-bold px-5 py-3 rounded-2xl hover:bg-white transition-all shadow-sm active:scale-95"
+                    onClick={() => setEditing(false)}
+                    className="flex items-center gap-2 bg-white/80 text-[#1f2937] text-xs font-bold px-4 py-2.5 rounded-xl hover:bg-white transition-all shadow-sm border-none cursor-pointer"
                   >
                     <X size={14} />
                     Cancel
@@ -217,9 +266,16 @@ export default function ProfilePage() {
                       localStorage.setItem("username", draftUsername);
                       localStorage.setItem("email", draftEmail);
 
+                      const updatedUser = {
+                        username: draftUsername,
+                        email: draftEmail,
+                        avatar: avatar,
+                      };
+                      localStorage.setItem("user", JSON.stringify(updatedUser));
+
                       setEditing(false);
                     }}
-                    className="flex items-center gap-2 bg-[#2f4b2f] text-white text-sm font-bold px-5 py-3 rounded-2xl hover:bg-[#3d6b3d] transition-all shadow-lg active:scale-95"
+                    className="flex items-center gap-2 bg-[#2f4b2f] text-white text-xs font-bold px-4 py-2.5 rounded-xl hover:bg-[#3d6b3d] transition-all shadow-md border-none cursor-pointer"
                   >
                     <Save size={14} />
                     Save
@@ -232,7 +288,7 @@ export default function ProfilePage() {
                     setDraftEmail(email);
                     setEditing(true);
                   }}
-                  className="flex items-center gap-2 bg-[#2f4b2f] text-white text-sm font-bold px-6 py-3 rounded-2xl hover:bg-[#3d6b3d] transition-all shadow-lg active:scale-95"
+                  className="flex items-center gap-2 bg-[#2f4b2f] text-white text-xs font-bold px-5 py-2.5 rounded-xl hover:bg-[#3d6b3d] transition-all shadow-md border-none cursor-pointer"
                 >
                   <Pencil size={14} />
                   Edit Profile
@@ -242,43 +298,51 @@ export default function ProfilePage() {
           </div>
         </div>
 
+        {/* HISTORIKAL REVIEW */}
         <div className="mt-14">
           <h2 className="text-[17px] font-bold text-[#c1697a] mb-5 tracking-wide">
             Your History Reviews
           </h2>
 
           <div className="flex flex-col gap-4">
-            {historyReviews.map((review, index) => (
-              <div
-                key={`${review.id}-${index}`}
-                className="bg-white/80 backdrop-blur-sm rounded-[24px] px-6 py-5 flex items-start gap-4 shadow-sm border border-white/40 hover:shadow-md transition-shadow"
-              >
-                <div className="w-11 h-11 rounded-full bg-[#c5a98e] flex-shrink-0 flex items-center justify-center text-white text-sm font-bold">
-                  {username.charAt(0).toUpperCase()}
-                </div>
-
-                <div className="flex-1 min-w-0">
-                  <div className="flex justify-between items-center">
-                    <p className="font-bold text-sm text-[#1f2937]">
-                      {username}
-                    </p>
-                    <span className="text-[10px] text-gray-400 font-medium">
-                      Recent
-                    </span>
+            {historyReviews.length === 0 ? (
+              <p className="text-center text-sm text-gray-400 py-8 bg-white/30 rounded-2xl border border-dashed border-white/50">
+                You haven&apos;t written any reviews yet.
+              </p>
+            ) : (
+              historyReviews.map((review, index) => (
+                <div
+                  key={`${review.id}-${index}`}
+                  className="bg-white/80 backdrop-blur-sm rounded-[24px] px-6 py-5 flex items-start gap-4 shadow-sm border border-white/40 hover:shadow-md transition-shadow"
+                >
+                  <div className="w-11 h-11 rounded-full bg-[#c5a98e] flex-shrink-0 flex items-center justify-center text-white text-sm font-bold">
+                    {username ? username.charAt(0).toUpperCase() : "K"}
                   </div>
-                  <p className="text-[12.5px] text-gray-500 mt-1.5 leading-relaxed">
-                    {review.text}
-                  </p>
+
+                  <div className="flex-1 min-w-0">
+                    <div className="flex justify-between items-center">
+                      <p className="font-bold text-sm text-[#1f2937] truncate">
+                        {username}
+                      </p>
+                      <span className="text-[10px] text-gray-400 font-medium shrink-0">
+                        Recent
+                      </span>
+                    </div>
+                    <p className="text-[12.5px] text-gray-500 mt-1.5 leading-relaxed break-words">
+                      {review.text || review.content}
+                    </p>
+                  </div>
                 </div>
-              </div>
-            ))}
+              ))
+            )}
           </div>
         </div>
 
+        {/* LOGOUT BUTTON */}
         <div className="mt-10 flex justify-end pb-16">
           <button
             onClick={handleLogout}
-            className="flex items-center gap-2 border-2 border-[#A36065] text-[#A36065] text-sm font-bold px-6 py-3 rounded-2xl hover:bg-[#A36065] hover:text-white transition-all shadow-sm active:scale-95"
+            className="flex items-center gap-2 border-2 border-[#A36065] text-[#A36065] text-sm font-bold px-6 py-2.5 rounded-xl hover:bg-[#A36065] hover:text-white transition-all shadow-sm cursor-pointer bg-transparent"
           >
             <LogOut size={16} />
             Logout
