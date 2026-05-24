@@ -1,157 +1,137 @@
 "use client";
 
-import { useEffect, useState, useMemo, Suspense } from "react";
+import { useState, useEffect, Suspense } from "react";
 import { useSearchParams, useRouter } from "next/navigation";
 import { ArrowLeft } from "lucide-react";
+import Image from "next/image";
 
-type Place = {
-  id: number;
-  slug: string;
-  name: string;
-  tags: string[];
-  crowdedness: string;
-};
+// ✅ INNER: Semua logika & useSearchParams() ada di sini
+function ResultsContent() {
+  const router = useRouter();
+  const searchParams = useSearchParams();
 
-const DEFAULT_PLACES: Place[] = [
-  {
-    id: 1,
-    slug: "gowork-fatmawati",
-    name: "GoWork Fatmawati",
-    tags: ["Indoor", "Quiet", "Group", "Focused"],
-    crowdedness: "High",
-  },
-  {
-    id: 2,
-    slug: "foreword-library",
-    name: "ForeWord Library",
-    tags: ["Indoor", "Quiet", "Alone", "Focused"],
-    crowdedness: "Low",
-  },
-  {
-    id: 3,
-    slug: "urban-forest-cipete",
-    name: "Urban Forest Cipete",
-    tags: ["Outdoor", "Relaxed", "Alone", "Busy"],
-    crowdedness: "Low",
-  },
-  {
-    id: 4,
-    slug: "dialogue-artspace",
-    name: "Dia.Lo.Gue Artspace",
-    tags: ["Indoor", "Quiet", "Alone", "Focused"],
-    crowdedness: "High",
-  },
-];
+  const [results, setResults] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
 
+  const apiUrl = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8080";
+
+  useEffect(() => {
+    const fetchResults = async () => {
+      setLoading(true);
+      try {
+        const res = await fetch(
+          `${apiUrl}/spots/search?${searchParams.toString()}`
+        );
+        const json = await res.json();
+        const data = json.data || json || [];
+        setResults(Array.isArray(data) ? data : []);
+      } catch (err) {
+        console.error("Gagal menarik data pencarian:", err);
+        setResults([]);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchResults();
+  }, [searchParams, apiUrl]);
+
+  return (
+    <div
+      className="min-h-screen bg-[#FBF2F3] px-6 py-8"
+      style={{ fontFamily: "'DM Sans', sans-serif" }}
+    >
+      <div className="flex items-center gap-3 mb-6">
+        <button
+          onClick={() => router.back()}
+          className="p-2 bg-white rounded-full shadow-sm hover:bg-[#2f4b2f] hover:text-white transition-colors text-[#2f4b2f]"
+        >
+          <ArrowLeft size={20} />
+        </button>
+        <h1 className="text-lg font-bold text-[#2f4b2f]">Search Results</h1>
+      </div>
+
+      {loading ? (
+        <div className="flex justify-center py-20">
+          <p className="text-[#2f4b2f] font-semibold italic">
+            Mencari tempat teduh untukmu...
+          </p>
+        </div>
+      ) : results.length === 0 ? (
+        <div className="text-center py-20">
+          <p className="text-gray-500 text-sm italic">
+            Tidak ada tempat yang sesuai dengan kriteria pencarianmu. Coba ubah
+            filternya ya!
+          </p>
+        </div>
+      ) : (
+        <div className="flex flex-col gap-4">
+          {results.map((place) => {
+            const displayTags = [
+              place.spotType,
+              place.atmosphere,
+              place.visitType,
+              place.mood,
+              place.crowdedness,
+            ].filter(Boolean);
+
+            return (
+              <div
+                key={place.id}
+                onClick={() =>
+                  router.push(`/dashboard/card-spot/${place.slug}`)
+                }
+                className="bg-white p-3 rounded-2xl cursor-pointer shadow-sm hover:shadow-md transition border border-transparent hover:border-[#2f4b2f]/20 flex gap-4 items-center"
+              >
+                <div className="relative w-24 h-24 rounded-xl overflow-hidden flex-shrink-0">
+                  <Image
+                    src={place.photoUrl || "/bg-library.webp"}
+                    alt={place.name}
+                    fill
+                    className="object-cover"
+                  />
+                </div>
+                <div className="flex-1 min-w-0">
+                  <h2 className="font-bold text-[#2f4b2f] truncate">
+                    {place.name}
+                  </h2>
+                  <p className="text-[11px] text-gray-400 mt-1 capitalize leading-relaxed">
+                    {displayTags.join(" • ")}
+                  </p>
+                  <div className="flex items-center gap-1 mt-2">
+                    <Image
+                      src="/smiley-black.png"
+                      alt="rating"
+                      width={14}
+                      height={14}
+                    />
+                    <span className="text-[12px] font-bold text-gray-700">
+                      {place.rating || "4.8"}
+                    </span>
+                  </div>
+                </div>
+              </div>
+            );
+          })}
+        </div>
+      )}
+    </div>
+  );
+}
+
+// ✅ OUTER: Hanya bertugas membungkus dengan Suspense, lalu di-export
 export default function ResultsPage() {
   return (
     <Suspense
       fallback={
-        <div className="min-h-screen bg-[#efefef] px-6 py-8 text-sm text-[#2f4b2f] italic">
-          Loading...
+        <div className="flex justify-center items-center min-h-screen bg-[#FBF2F3]">
+          <p className="text-[#2f4b2f] font-semibold italic">
+            Mencari tempat teduh untukmu...
+          </p>
         </div>
       }
     >
       <ResultsContent />
     </Suspense>
-  );
-}
-
-function ResultsContent() {
-  const router = useRouter();
-  const searchParams = useSearchParams();
-  const [allPlaces, setAllPlaces] = useState<Place[]>(DEFAULT_PLACES);
-
-  const query = searchParams.get("q")?.toLowerCase() || "";
-  const facilities = searchParams.get("facilities")?.split(",") || [];
-  const crowdedness = searchParams.get("crowdedness")?.split(",") || [];
-
-  // Sinkronisasi dinamis: Menggabungkan semua spot buatan Admin dari LocalStorage
-  useEffect(() => {
-    const savedSpots = localStorage.getItem("spots");
-    if (savedSpots) {
-      try {
-        const adminSpots = JSON.parse(savedSpots).map((spot: any) => ({
-          id: spot.id,
-          slug: spot.name.toLowerCase().replaceAll(" ", "-"),
-          name: spot.name,
-          tags: [...(spot.facilities || []), spot.category || ""],
-          crowdedness: Array.isArray(spot.crowdedness)
-            ? spot.crowdedness[0] || "Low"
-            : spot.crowdedness || "Low",
-        }));
-
-        // Gabungkan seluruh spot admin dengan data default agar pencarian mencakup semua data
-        setAllPlaces([...adminSpots, ...DEFAULT_PLACES]);
-      } catch (err) {
-        console.error(err);
-      }
-    }
-  }, []);
-
-  const filtered = useMemo(() => {
-    return allPlaces.filter((p) => {
-      const matchQuery = !query || p.name.toLowerCase().includes(query);
-
-      const matchFacilities =
-        facilities.length === 0 ||
-        facilities.every((f) =>
-          p.tags.map((t) => t.toLowerCase()).includes(f.toLowerCase()),
-        );
-
-      const matchCrowd =
-        crowdedness.length === 0 ||
-        crowdedness.some(
-          (c) => p.crowdedness.toLowerCase() === c.toLowerCase(),
-        );
-
-      return matchQuery && matchFacilities && matchCrowd;
-    });
-  }, [allPlaces, query, facilities, crowdedness]);
-
-  // NOTE: Efek useEffect router.replace lama yang otomatis lompat ke detail spot ketika filtered.length === 1 sudah dihapus total!
-
-  return (
-    <div
-      className="min-h-screen bg-[#efefef] px-6 py-8"
-      style={{ fontFamily: "sans-serif" }}
-    >
-      {/* HEADER DENGAN ICON BACK (ORISINAL) */}
-      <div className="flex items-center gap-3 mb-6">
-        <button
-          onClick={() => router.back()}
-          className="p-2 bg-white rounded-full shadow-sm hover:bg-gray-100 transition-colors border-none cursor-pointer"
-        >
-          <ArrowLeft size={20} className="text-[#2f4b2f]" />
-        </button>
-        <h1 className="text-lg font-bold text-[#2f4b2f]">Search Results</h1>
-      </div>
-
-      {/* EMPTY STATE (ORISINAL) */}
-      {filtered.length === 0 && (
-        <p className="text-gray-500 text-sm italic ml-2">
-          No places found. Try adjusting your filters.
-        </p>
-      )}
-
-      {/* RESULTS DISPLAY LIST (ORISINAL STYLE) */}
-      <div className="flex flex-col gap-3">
-        {filtered.map((place) => (
-          <div
-            key={`${place.slug}-${place.id}`}
-            onClick={() => router.push(`/dashboard/card-spot/${place.slug}`)}
-            className="bg-white p-4 rounded-xl cursor-pointer hover:shadow-sm transition border border-transparent hover:border-[#2f4b2f]/20 animate-in fade-in slide-in-from-bottom-1 duration-200"
-          >
-            <h2 className="font-semibold text-[#2f4b2f] text-base m-0">
-              {place.name}
-            </h2>
-
-            <p className="text-xs text-gray-500 mt-1 m-0">
-              {place.tags.join(", ")} • {place.crowdedness}
-            </p>
-          </div>
-        ))}
-      </div>
-    </div>
   );
 }

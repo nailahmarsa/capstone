@@ -5,91 +5,32 @@ import { ArrowLeft, Bookmark, Clock, ArrowRight } from "lucide-react";
 import { useRouter, useParams } from "next/navigation";
 import { useState, useEffect } from "react";
 
-// ── DATA DAFTAR REVIEW INITIAL (AMAN DARI RUNTIME ERROR SERVER) ──
-const DEFAULT_REVIEWS = [
-  {
-    id: 1,
-    name: "User",
-    text: "Absolutely love this spot for morning coding sessions.",
-  },
-  {
-    id: 2,
-    name: "User",
-    text: "Very peaceful and comfortable atmosphere.",
-  },
-  {
-    id: 3,
-    name: "User",
-    text: "One of my favorite places to focus and unwind at the same time. Definitely recommended for students and remote workers looking for calm spaces.",
-  },
-];
-
-// ── DATA EMOJI ──
 const emojis = [
-  {
-    val: 1,
-    src: "/pensive.png",
-    srcColor: "/pensive-color.png",
-    label: "Very Bad",
-  },
-  {
-    val: 2,
-    src: "/frowning.png",
-    srcColor: "/frowning-color.png",
-    label: "Bad",
-  },
-  {
-    val: 3,
-    src: "/neutral.png",
-    srcColor: "/neutral-color.png",
-    label: "Neutral",
-  },
+  { val: 1, src: "/pensive.png", srcColor: "/pensive-color.png", label: "Very Bad" },
+  { val: 2, src: "/frowning.png", srcColor: "/frowning-color.png", label: "Bad" },
+  { val: 3, src: "/neutral.png", srcColor: "/neutral-color.png", label: "Neutral" },
   { val: 4, src: "/smiley.png", srcColor: "/smiley-color.png", label: "Good" },
-  {
-    val: 5,
-    src: "/beaming.png",
-    srcColor: "/beaming-color.png",
-    label: "Great",
-  },
+  { val: 5, src: "/beaming.png", srcColor: "/beaming-color.png", label: "Great" },
 ];
 
 function ReviewModal({
   onClose,
-  onSubmitReview,
+  onSubmit,
 }: {
   onClose: () => void;
-  onSubmitReview: (review: any) => void;
+  onSubmit: (rating: number, text: string) => void;
 }) {
   const [rating, setRating] = useState<number | null>(null);
   const [text, setText] = useState("");
   const [submitted, setSubmitted] = useState(false);
-  const [userData, setUserData] = useState<any>(null);
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
-  useEffect(() => {
-    const savedUser = localStorage.getItem("user");
-    if (savedUser) {
-      try {
-        setUserData(JSON.parse(savedUser));
-      } catch (e) {
-        console.error(e);
-      }
-    }
-  }, []);
-
-  const handleSubmit = () => {
+  const handleSubmit = async () => {
     if (!rating || !text.trim()) return;
-
-    const currentUsername =
-      localStorage.getItem("username") || userData?.username || "User";
-
-    onSubmitReview({
-      id: Date.now(),
-      name: currentUsername,
-      text,
-      rating,
-    });
-
+    setIsSubmitting(true);
+    await onSubmit(rating, text.trim());
     setSubmitted(true);
+    setIsSubmitting(false);
   };
 
   return (
@@ -97,10 +38,10 @@ function ReviewModal({
       className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm px-4"
       onClick={(e) => e.target === e.currentTarget && onClose()}
     >
-      <div className="bg-white rounded-[24px] p-10 w-full max-w-[500px] relative shadow-2xl animate-in zoom-in-95 duration-200">
+      <div className="bg-white rounded-[24px] p-8 w-full max-w-[420px] relative shadow-2xl animate-in zoom-in-95 duration-200">
         <button
           onClick={onClose}
-          className="absolute top-5 right-5 text-gray-400 hover:text-gray-600 text-xl bg-transparent border-none cursor-pointer"
+          className="absolute top-5 right-5 text-gray-400 hover:text-gray-600 text-xl"
         >
           ✕
         </button>
@@ -110,7 +51,6 @@ function ReviewModal({
             <h2 className="text-[24px] font-extrabold text-[#1f2937] text-center">
               Rate and Review
             </h2>
-
             <p className="text-[13px] text-gray-400 text-center mt-1">
               Tell us what you feel and think!
             </p>
@@ -120,11 +60,7 @@ function ReviewModal({
                 <button
                   key={e.val}
                   onClick={() => setRating(e.val)}
-                  className={`w-12 h-12 flex items-center justify-center bg-transparent border-none cursor-pointer transition-all duration-200 ${
-                    rating === e.val
-                      ? "scale-125 opacity-100"
-                      : "opacity-40 hover:opacity-70"
-                  }`}
+                  className={`w-12 h-12 flex items-center justify-center transition-all duration-200 ${rating === e.val ? "scale-125 opacity-100" : "opacity-40 hover:opacity-70"}`}
                 >
                   <Image
                     src={rating === e.val ? e.srcColor : e.src}
@@ -144,47 +80,32 @@ function ReviewModal({
                 placeholder="Type your message here..."
                 className="w-full bg-transparent text-[13px] text-gray-700 resize-none h-[100px] outline-none placeholder-gray-400"
               />
-
               <div className="flex justify-end mt-2">
                 <button
                   onClick={handleSubmit}
-                  disabled={!rating || !text.trim()}
-                  className="bg-[#2f4b2f] text-white text-[13px] font-bold px-6 py-2.5 rounded-xl hover:bg-[#3d6b3d] disabled:opacity-40 transition-all border-none cursor-pointer"
+                  disabled={!rating || !text.trim() || isSubmitting}
+                  className="bg-[#2f4b2f] text-white text-[13px] font-bold px-6 py-2.5 rounded-lg hover:bg-[#3d6b3d] disabled:opacity-40 transition-all"
                 >
-                  Submit
+                  {isSubmitting ? "Submitting..." : "Submit"}
                 </button>
               </div>
             </div>
           </>
         ) : (
           <div className="flex flex-col items-center text-center py-6">
-            <div className="w-20 h-20 rounded-[20px] bg-[#eef3ee] flex items-center justify-center mb-8">
-              <svg width="40" height="40" viewBox="0 0 40 40" fill="none">
+            <div className="w-16 h-16 rounded-2xl bg-[#f0faf0] border border-[#2f4b2f]/20 flex items-center justify-center mb-4">
+              <svg width="24" height="24" viewBox="0 0 28 28" fill="none">
                 <path
-                  d="M8 21 L17 30 L33 10"
-                  stroke="#0B7A3B"
-                  strokeWidth="3.5"
+                  d="M6 14 L12 20 L22 9"
+                  stroke="#2f4b2f"
+                  strokeWidth="3"
                   strokeLinecap="round"
                   strokeLinejoin="round"
                 />
-                <path
-                  d="M10 34 H31"
-                  stroke="#0B7A3B"
-                  strokeWidth="3"
-                  strokeLinecap="round"
-                />
               </svg>
             </div>
-
-            <h2 className="text-[28px] leading-tight font-extrabold text-[#131B11]">
-              Your Review has been
-              <br />
-              submitted!
-            </h2>
-
-            <p className="text-[14px] text-[#5E5E5E] mt-6 leading-relaxed max-w-[320px]">
-              Thanks for sharing! Your input helps other users make better
-              choices.
+            <p className="text-[18px] font-bold text-gray-800">
+              Review Submitted!
             </p>
           </div>
         )}
@@ -204,146 +125,197 @@ export default function SpotDetailPage() {
   const [isBookmarked, setIsBookmarked] = useState(false);
   const [reviews, setReviews] = useState<any[]>([]);
 
+  const apiUrl = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8080";
+
+  // 1. Fetch Detail Spot berdasarkan Slug
   useEffect(() => {
-    fetch("/data/places.json")
-      .then((res) => res.json())
-      .then((data) => {
-        if (data[slug]) {
-          setPlace(data[slug]);
-        } else {
-          const savedSpots = localStorage.getItem("spots");
-          const adminSpots = savedSpots ? JSON.parse(savedSpots) : [];
-
-          const foundSpot = adminSpots.find((spot: any) => {
-            const spotSlug = spot.name.toLowerCase().replaceAll(" ", "-");
-            return spotSlug === slug;
-          });
-
-          if (foundSpot) {
-            setPlace({
-              name: foundSpot.name,
-              image: foundSpot.img,
-              rating: 4.8,
-              ratingIcon: "/beaming-black.png",
-              description: foundSpot.description,
-              tags: foundSpot.facilities || [],
-              hours: [
-                {
-                  day: "Everyday",
-                  hours: `${foundSpot.openHour} - ${foundSpot.closeHour}`,
-                  closed: false,
-                },
-              ],
-              mapLink: `http://maps.google.com/?q=${foundSpot.coordinates}`,
-            });
-          }
+    const fetchPlaceDetail = async () => {
+      try {
+        const res = await fetch(`${apiUrl}/spots/${slug}`);
+        if (!res.ok) throw new Error("Spot not found");
+        const json = await res.json();
+        const data = json.data || json;
+        setPlace(data);
+        
+        // 2. Jika sukses dapat ID spot, baru kita fetch reviewnya
+        if (data && data.id) {
+            fetchReviews(data.id);
         }
-      })
-      .catch((err) => console.error(err))
-      .finally(() => setLoading(false));
+      } catch (err) {
+        console.error("Gagal menarik data detail spot:", err);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchPlaceDetail();
   }, [slug]);
 
-  useEffect(() => {
-    const stored = localStorage.getItem("bookmarks");
+  // Fungsi untuk menarik review dari Backend
+  // Fungsi untuk menarik review dari Backend
+  // Fungsi untuk menarik review dari Backend
+  const fetchReviews = async (spotId: number) => {
+    try {
+        const res = await fetch(`${apiUrl}/spots/${spotId}/reviews`, { cache: 'no-store' });
+        const json = await res.json();
+        
+        console.log("Struktur data dari Backend:", json);
 
-    if (stored) {
-      const bookmarks = JSON.parse(stored);
-      setIsBookmarked(bookmarks.some((b: any) => b.slug === slug));
+        // PERBAIKAN: Backend kamu membungkus ulasan di dalam json.data.reviews
+        if (json.data && Array.isArray(json.data.reviews)) {
+            setReviews(json.data.reviews);
+        } else {
+            setReviews([]);
+        }
+    } catch (err) {
+        console.error("Gagal menarik data review:", err);
+        setReviews([]);
     }
-  }, [slug]);
+  }
 
+  // 3. Cek status Bookmark
+  // Pastikan ini ada di dalam useEffect utama
+// 1. Fetch Detail Spot DAN Review (Cukup panggil di sini saja)
   useEffect(() => {
-    // ─── AMBIL & SINKRONISASI AKUN SECARA AMAN DI CLIENT-SIDE ───
-    const storedReviews = localStorage.getItem(`reviews-${slug}`);
-    const activeUsername = localStorage.getItem("username") || "User";
+    const initPage = async () => {
+      setLoading(true);
+      try {
+        const res = await fetch(`${apiUrl}/spots/${slug}`, { cache: 'no-store' });
+        const json = await res.json();
+        const data = json.data || json;
+        setPlace(data);
+        
+        // Panggil review di sini agar sinkron setelah data spot didapat
+        if (data?.id) {
+          await fetchReviews(data.id);
+        }
+      } catch (err) {
+        console.error(err);
+      } finally {
+        setLoading(false);
+      }
+    };
 
-    if (storedReviews) {
-      setReviews(JSON.parse(storedReviews));
-    } else {
-      // Perbarui nama di default review dengan username login saat ini secara dinamis
-      const localizedDefault = DEFAULT_REVIEWS.map((r) => ({
-        ...r,
-        name: activeUsername,
-      }));
-      setReviews(localizedDefault);
-    }
+    initPage();
   }, [slug]);
+
+  const fetchPlaceDetail = async () => {
+    try {
+        const res = await fetch(`${apiUrl}/spots/${slug}`, { cache: 'no-store' });
+        const json = await res.json();
+        const data = json.data || json;
+        
+        console.log("Spot ID yang didapat dari Backend:", data.id); // <--- LIHAT INI DI CONSOLE
+        setPlace(data);
+        
+        if (data?.id) {
+          fetchReviews(data.id);
+        }
+    } catch (err) {
+        console.error("Gagal menarik data detail spot:", err);
+    } finally {
+        setLoading(false);
+    }
+};
 
   const toggleBookmark = () => {
     if (!place) return;
-
     const stored = localStorage.getItem("bookmarks");
     const bookmarks = stored ? JSON.parse(stored) : [];
-
     if (isBookmarked) {
-      const updated = bookmarks.filter((b: any) => b.slug !== slug);
-
-      localStorage.setItem("bookmarks", JSON.stringify(updated));
+      localStorage.setItem(
+        "bookmarks",
+        JSON.stringify(bookmarks.filter((b: any) => b.slug !== slug)),
+      );
       setIsBookmarked(false);
     } else {
       localStorage.setItem(
         "bookmarks",
         JSON.stringify([...bookmarks, { slug, ...place }]),
       );
-
       setIsBookmarked(true);
     }
   };
 
-  const handleAddReview = (review: any) => {
-    const updatedReviews = [review, ...reviews];
-    setReviews(updatedReviews);
-    localStorage.setItem(`reviews-${slug}`, JSON.stringify(updatedReviews));
-  };
+  // 4. Submit Review Baru ke Backend (Method POST)
+  // 4. Submit Review Baru ke Backend (Method POST)
+  const handleNewReview = async (rating: number, text: string) => {
+    if (!place || !place.id) return;
+    
+    try {
+        const token = localStorage.getItem("token");
+        const res = await fetch(`${apiUrl}/reviews`, {
+            method: "POST",
+            headers: {
+                "Content-Type": "application/json",
+                "Authorization": `Bearer ${token}` 
+            },
+            body: JSON.stringify({
+                spot_id: Number(place.id), // Pastikan ID adalah angka
+                rating: rating,
+                comment: text
+            })
+        });
 
-  if (loading) {
+        if (res.ok) {
+            // Kita BUKAN melakukan setReviews manual lagi,
+            // tapi langsung memanggil fetchReviews untuk mengambil data terbaru dari database
+            // Ini jauh lebih aman daripada memaksa state secara manual.
+            await fetchReviews(Number(place.id));
+            alert("Ulasan berhasil disimpan!");
+        } else {
+             const err = await res.json();
+             console.error("Error dari server:", err);
+             alert("Gagal menyimpan ulasan.");
+        }
+    } catch (error) {
+        console.error("Error:", error);
+    }
+};
+
+  if (loading)
     return (
       <div className="min-h-screen flex items-center justify-center bg-[#FBF2F3] font-bold text-[#2f4b2f]">
-        Loading...
+        Memuat detail spot...
       </div>
     );
-  }
-
-  if (!place) {
+    
+  if (!place)
     return (
       <div className="p-10 text-center text-[#2f4b2f] font-bold">
-        Spot tidak ditemukan.
+        Spot yang kamu cari tidak ditemukan.
       </div>
     );
-  }
+
+  const displayTags = [place.spotType, place.atmosphere, place.visitType, place.mood].filter(Boolean);
+  const operatingHours = typeof place.operationalHours === 'string' ? place.operationalHours : "08:00 - 22:00";
 
   return (
     <div
       className="min-h-screen"
-      style={{
-        fontFamily: "'DM Sans', sans-serif",
-        backgroundColor: "#FBF2F3",
-      }}
+      style={{ fontFamily: "'DM Sans', sans-serif", backgroundColor: "#FBF2F3" }}
     >
-      {/* HERO SECTION */}
       <div className="relative w-full h-[260px]">
         <Image
-          src={place.image || "/gowork.png"}
+          src={place.photoUrl || "/bg-library.webp"}
           alt={place.name}
           fill
           className="object-cover"
           priority
         />
-
         <div className="absolute inset-0 bg-gradient-to-b from-[#FBF2F3]/30 via-[#FBF2F3]/70 to-[#FBF2F3]" />
 
         <div className="absolute top-5 left-5 right-5 flex items-center justify-between px-2 py-2 rounded-full bg-white/40 backdrop-blur-sm">
           <div className="flex items-center gap-3 ml-1">
             <button
               onClick={() => router.back()}
-              className="w-9 h-9 rounded-full bg-white flex items-center justify-center shadow-sm hover:bg-[#2f4b2f] group transition-all border-none cursor-pointer"
+              className="w-9 h-9 rounded-full bg-white flex items-center justify-center shadow-sm hover:bg-[#2f4b2f] group transition-all"
             >
               <ArrowLeft
                 size={18}
                 className="text-[#2f4b2f] group-hover:text-white transition-colors"
               />
             </button>
-
             <span className="text-[#2f4b2f] text-[15px] font-bold tracking-tight">
               Detail Spot
             </span>
@@ -351,14 +323,12 @@ export default function SpotDetailPage() {
 
           <button
             onClick={toggleBookmark}
-            className="w-9 h-9 rounded-full bg-white flex items-center justify-center mr-1 shadow-sm border-none cursor-pointer"
+            className="w-9 h-9 rounded-full bg-white flex items-center justify-center mr-1 shadow-sm"
           >
             <Bookmark
               size={17}
               className={
-                isBookmarked
-                  ? "text-[#2f4b2f] fill-[#2f4b2f]"
-                  : "text-[#2f4b2f]"
+                isBookmarked ? "text-[#2f4b2f] fill-[#2f4b2f]" : "text-[#2f4b2f]"
               }
             />
           </button>
@@ -369,7 +339,10 @@ export default function SpotDetailPage() {
         {showReview && (
           <ReviewModal
             onClose={() => setShowReview(false)}
-            onSubmitReview={handleAddReview}
+            onSubmit={(rating, text) => {
+              handleNewReview(rating, text);
+              setTimeout(() => setShowReview(false), 2000); 
+            }}
           />
         )}
 
@@ -377,17 +350,10 @@ export default function SpotDetailPage() {
           <h1 className="text-[2rem] font-bold text-[#2f4b2f] leading-tight tracking-tight">
             {place.name}
           </h1>
-
           <div className="flex items-center gap-1.5 mt-1 flex-shrink-0 ml-3">
-            <Image
-              src={place.ratingIcon || "/beaming-black.png"}
-              alt="rating"
-              width={18}
-              height={18}
-            />
-
+            <Image src="/smiley-black.png" alt="rating" width={18} height={18} />
             <span className="font-bold text-[#2f4b2f] text-[14px]">
-              {place.rating}
+              {place.rating || "4.8"}
             </span>
           </div>
         </div>
@@ -395,71 +361,64 @@ export default function SpotDetailPage() {
         <p className="text-[#6b7280] text-[13px] mt-2 leading-relaxed">
           {place.description}
         </p>
+        
+        {/* PERBAIKAN: Fallback Alamat jika kosong di Database */}
+        <p className="text-[#2f4b2f] text-[12px] font-semibold mt-4 italic">
+          📍 {place.address || "Jakarta Raya, Indonesia"}
+        </p>
 
         <div className="flex gap-4 mt-5 items-start">
-          <div className="flex flex-wrap gap-2.5 flex-1">
-            {place.tags &&
-              place.tags.map((tag: string) => (
+          <div className="flex flex-col gap-2.5 flex-1">
+             <div className="flex flex-wrap gap-2">
+                {displayTags.map((tag: string, index) => (
                 <span
-                  key={tag}
-                  className="px-4 py-1.5 rounded-full bg-[#2f4b2f]/10 text-[#2f4b2f] text-[12px] font-bold"
+                    key={index}
+                    className="px-4 py-1.5 rounded-full bg-[#2f4b2f]/10 text-[#2f4b2f] text-[12px] font-bold capitalize"
                 >
-                  {tag}
+                    {tag}
                 </span>
-              ))}
+                ))}
+             </div>
+             
+             {place.facilities && (
+                 <div className="mt-2">
+                     <span className="text-[12px] font-bold text-[#2f4b2f]">Fasilitas: </span>
+                     <span className="text-[12px] text-gray-600">{place.facilities}</span>
+                 </div>
+             )}
           </div>
 
-          {place.hours && (
-            <div className="bg-white rounded-2xl p-4 min-w-[170px] border border-[#2f4b2f]/20">
-              <div className="flex items-center gap-1.5 mb-3 text-[12px] font-bold text-[#2f4b2f]">
-                <Clock size={13} /> Operating Hours
-              </div>
-
-              {place.hours.map((item: any) => (
-                <div
-                  key={item.day}
-                  className="flex justify-between items-center mb-1.5 text-[11px]"
-                >
-                  <span className="text-gray-400">{item.day}</span>
-
-                  <span
-                    className={`font-bold ${
-                      item.closed ? "text-[#A36065]" : "text-[#2f4b2f]"
-                    }`}
-                  >
-                    {item.hours}
-                  </span>
-                </div>
-              ))}
+          <div className="bg-white rounded-2xl p-4 min-w-[170px] border border-[#2f4b2f]/20">
+            <div className="flex items-center gap-1.5 mb-3 text-[12px] font-bold text-[#2f4b2f]">
+              <Clock size={13} /> Operating Hours
             </div>
-          )}
+             <div className="flex justify-between items-center mb-1.5 text-[11px]">
+                <span className="text-gray-400">Setiap Hari</span>
+                <span className="font-bold text-[#2f4b2f]">
+                  {operatingHours}
+                </span>
+              </div>
+          </div>
         </div>
 
+        {/* PERBAIKAN: Tombol Google Maps otomatis mencari berdasarkan Nama Tempat */}
         <button
-          onClick={() => window.open(place.mapLink, "_blank")}
-          className="mt-6 mb-12 flex items-center gap-2 bg-[#2f4b2f] text-white text-sm font-bold px-6 py-2.5 rounded-xl hover:bg-[#3d6b3d] transition-all border-none cursor-pointer"
+          onClick={() => window.open(`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(place.name)}`, "_blank")}
+          className="mt-6 mb-12 flex items-center gap-2 bg-[#2f4b2f] text-white text-sm font-bold px-6 py-2.5 rounded-lg hover:bg-[#3d6b3d] transition-all"
         >
           Go There <ArrowRight size={16} />
         </button>
 
         <div className="flex items-center justify-between mb-4">
           <h2 className="font-bold text-[16px] text-[#2f4b2f]">
-            Latest Review
+            Latest Review ({reviews.length})
           </h2>
-
           <button
             onClick={() => setShowReview(true)}
-            className="flex items-center gap-1.5 bg-[#2f4b2f] text-white text-[11px] font-bold px-4 py-2 rounded-xl hover:bg-[#3d6b3d] transition-all border-none cursor-pointer"
+            className="flex items-center gap-1.5 bg-[#2f4b2f] text-white text-[11px] font-bold px-4 py-2 rounded-lg hover:bg-[#3d6b3d] transition-all"
           >
             Write a Review
-            <svg
-              width="12"
-              height="12"
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="currentColor"
-              strokeWidth="2.5"
-            >
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
               <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7" />
               <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z" />
             </svg>
@@ -467,27 +426,34 @@ export default function SpotDetailPage() {
         </div>
 
         <div className="flex flex-col gap-3">
-          {reviews.map((review) => (
-            <div
-              key={review.id}
-              className="bg-white rounded-[24px] p-4 shadow-sm flex gap-3 items-start border border-gray-50"
-            >
-              {/* FIX INITIAL BULATAN DINAMIS MENGIKUTI NAMA REVIEWER */}
-              <div className="w-10 h-10 rounded-full bg-[#c5a98e] flex items-center justify-center text-white text-xs font-bold shrink-0">
-                {review.name ? review.name.charAt(0).toUpperCase() : "U"}
-              </div>
-
-              <div className="flex-1 min-w-0">
-                <p className="font-bold text-[13px] text-[#2f4b2f] truncate">
-                  {review.name}
-                </p>
-
-                <p className="text-[12px] text-gray-400 mt-0.5 leading-relaxed font-medium break-words">
-                  {review.text}
-                </p>
-              </div>
-            </div>
-          ))}
+          {reviews.length === 0 ? (
+              <p className="text-center text-sm text-gray-500 my-4 italic">Belum ada ulasan. Jadilah yang pertama memberikan review!</p>
+          ) : (
+             reviews.map((review: any) => (
+                <div
+                key={review.id}
+                className="bg-white rounded-[24px] p-4 shadow-sm flex gap-3 items-start border border-gray-50"
+                >
+                <div className="w-10 h-10 rounded-full bg-[#c5a98e] flex items-center justify-center text-white text-xs font-bold flex-shrink-0">
+                    {review.user?.username?.charAt(0).toUpperCase() || review.name?.charAt(0).toUpperCase() || 'U'}
+                </div>
+                <div className="flex-1">
+                    <div className="flex justify-between items-center">
+                        <p className="font-bold text-[13px] text-[#2f4b2f]">
+                            {review.user?.username || review.name || "Anonymous"}
+                        </p>
+                        <span className="text-[10px] text-gray-400 bg-gray-100 px-2 py-0.5 rounded-full">
+                            ★ {review.rating}/5
+                        </span>
+                    </div>
+                    
+                    <p className="text-[12px] text-gray-400 mt-1 leading-relaxed font-medium">
+                    {review.comment || review.text}
+                    </p>
+                </div>
+                </div>
+            ))
+          )}
         </div>
       </div>
     </div>

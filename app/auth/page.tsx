@@ -7,7 +7,6 @@ import { useRouter, useSearchParams } from "next/navigation";
 import { FaEye, FaEyeSlash } from "react-icons/fa";
 import { ArrowLeft } from "lucide-react";
 
-// Komponen Utama yang diexport Next.js wajib membungkus dengan Suspense
 export default function AuthPage() {
   return (
     <Suspense
@@ -22,7 +21,6 @@ export default function AuthPage() {
   );
 }
 
-// Seluruh logika dan konten utama dipindahkan ke sini
 function AuthContent() {
   const searchParams = useSearchParams();
   // Otomatis menentukan Sign Up / Sign In berdasarkan query params (?mode=signin)
@@ -44,7 +42,7 @@ function AuthContent() {
         <div className="w-full max-w-[360px] mb-3">
           <Link
             href="/"
-            className="flex items-center gap-1.5 text-sm font-medium text-[#354e30] hover:text-[#202f1d] transition no-underline"
+            className="flex items-center gap-1.5 text-sm font-medium text-[#354e30] hover:text-[#202f1d] transition"
           >
             <ArrowLeft className="w-4 h-4" />
             Back to Home
@@ -75,6 +73,7 @@ function AuthCard({
     setLoading(true);
 
     const baseUrl = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8080";
+
     let endpoint = "";
     const isAdminEmail = email.toLowerCase().includes("admin");
 
@@ -102,20 +101,9 @@ function AuthCard({
       const result = await response.json();
 
       if (response.ok) {
-        if (isSignUp) {
-          alert("Registrasi Berhasil! Silakan klik Sign In untuk masuk.");
+        alert(isSignUp ? "Registrasi Berhasil!" : "Login Berhasil!");
 
-          // SINKRONISASI AWAL: Ambil nama dari input atau response data BE
-          const registeredName =
-            username || result.username || result.data?.username;
-          if (registeredName) localStorage.setItem("username", registeredName);
-          if (email) localStorage.setItem("email", email);
-
-          // Pindahkan form ke mode Sign In secara otomatis
-          setIsSignUp(false);
-        } else {
-          alert("Login Berhasil!");
-
+        if (!isSignUp) {
           const token = result.token || result.data?.token;
           const storedName = result.username || result.data?.username;
 
@@ -129,9 +117,6 @@ function AuthCard({
             localStorage.setItem("email", email);
           }
 
-          // Bersihkan sisa backup session 'user' JSON yang lama agar sinkronisasi profile fresh kembali
-          localStorage.removeItem("user");
-
           if (isAdminEmail) {
             localStorage.setItem("role", "admin");
             router.push("/admin");
@@ -139,14 +124,14 @@ function AuthCard({
             localStorage.setItem("role", "user");
             router.push("/dashboard");
           }
+        } else {
+          setIsSignUp(false);
         }
       } else {
         alert("Gagal: " + (result.message || "Data tidak valid"));
       }
     } catch (error) {
-      alert(
-        "Koneksi gagal ke backend! Pastikan server BE port 8080 sudah menyala.",
-      );
+      alert("Koneksi gagal ke backend!");
     } finally {
       setLoading(false);
     }
@@ -203,7 +188,7 @@ function AuthCard({
         <button
           type="submit"
           disabled={loading}
-          className="w-full bg-[#354e30] text-[#ebedea] py-3 rounded-md hover:bg-[#202f1d] transition font-medium mt-2 disabled:opacity-50 border-none cursor-pointer"
+          className="w-full bg-[#354e30] text-[#ebedea] py-3 rounded-md hover:bg-[#202f1d] transition font-medium mt-2 disabled:opacity-50"
         >
           {loading ? "Memproses..." : isSignUp ? "Sign Up" : "Sign In"}
         </button>
@@ -265,14 +250,14 @@ function Input({
           value={value}
           onChange={onChange}
           required
-          className="w-full bg-gray-100 text-black rounded-md px-3 py-2 pr-10 outline-none text-sm placeholder:text-gray-400 focus:ring-1 focus:ring-[#354e30] transition border-none"
+          className="w-full bg-gray-100 text-black rounded-md px-3 py-2 pr-10 outline-none text-sm placeholder:text-gray-400 focus:ring-1 focus:ring-[#354e30] transition"
         />
 
         {isPassword && (
           <button
             type="button"
             onClick={() => setShow(!show)}
-            className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-500 hover:text-[#354e30] transition-colors focus:outline-none bg-transparent border-none cursor-pointer"
+            className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-500 hover:text-[#354e30] transition-colors focus:outline-none"
           >
             {show ? <FaEye size={16} /> : <FaEyeSlash size={16} />}
           </button>

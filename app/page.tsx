@@ -3,8 +3,6 @@
 import { useState, useEffect, useRef } from "react";
 import Image from "next/image";
 import Link from "next/link";
-// Perbaikan named export agar tidak menghasilkan error runtime
-import { useRouter } from "next/navigation";
 import {
   Map,
   ListFilter,
@@ -27,7 +25,6 @@ export default function LandingPage() {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [activeSection, setActiveSection] = useState("explore");
   const [scrolled, setScrolled] = useState(false);
-  const router = useRouter();
 
   const menuRef = useRef<HTMLDivElement>(null);
   const hamburgerRef = useRef<HTMLButtonElement>(null);
@@ -82,14 +79,11 @@ export default function LandingPage() {
 
   const navLinkClass = (id: string) =>
     activeSection === id
-      ? "relative text-sm font-bold text-[#354e30] after:content-[''] after:block after:mt-0.5 after:border-b-2 after:border-[#354e30] after:scale-x-100 transition-all text-left bg-transparent border-none cursor-pointer"
-      : "relative text-sm text-[#6b7c6a] hover:text-[#c1697a] transition-all after:content-[''] after:block after:mt-0.5 after:border-b-2 after:border-[#c1697a] after:scale-x-0 hover:after:scale-x-[0.7] after:transition-transform after:duration-100 after:ease-linear text-left bg-transparent border-none cursor-pointer";
+      ? "relative text-sm font-bold text-[#354e30] after:content-[''] after:block after:mt-0.5 after:border-b-2 after:border-[#354e30] after:scale-x-100 transition-all"
+      : "relative text-sm text-[#6b7c6a] hover:text-[#c1697a] transition-all after:content-[''] after:block after:mt-0.5 after:border-b-2 after:border-[#c1697a] after:scale-x-0 hover:after:scale-x-[0.7] after:transition-transform after:duration-100 after:ease-linear";
 
   return (
-    <div
-      className="min-h-screen bg-[#f5f2ee]"
-      style={{ fontFamily: "'DM Sans', sans-serif" }}
-    >
+    <div className="min-h-screen bg-[#f5f2ee] font-sans">
       {/* NAVBAR */}
       <nav
         className={`sticky top-0 z-50 transition-all duration-300 ${
@@ -101,7 +95,7 @@ export default function LandingPage() {
         <div className="max-w-6xl mx-auto px-6 h-16 flex items-center justify-between">
           <button
             onClick={() => scrollToSection("explore")}
-            className="flex items-center gap-2 bg-transparent border-none cursor-pointer"
+            className="flex items-center gap-2"
           >
             <Image
               src="/Group 3.png"
@@ -130,19 +124,19 @@ export default function LandingPage() {
           <div className="flex items-center gap-2 sm:gap-3">
             <Link
               href="/auth?mode=signin"
-              className="text-sm font-medium text-[#354e30] hover:text-[#202f1d] px-2 py-1.5 transition no-underline"
+              className="text-sm font-medium text-[#354e30] hover:text-[#202f1d] px-2 py-1.5 transition"
             >
               Sign In
             </Link>
             <Link
-              href="/auth?mode=signup"
-              className="text-sm font-semibold bg-[#354e30] text-white px-5 py-2 rounded-lg hover:bg-[#2a3d25] transition-all duration-200 shadow-sm no-underline"
+              href="/auth"
+              className="text-sm font-semibold bg-[#354e30] text-white px-5 py-2 rounded-lg hover:bg-[#2a3d25] transition-all duration-200 shadow-sm"
             >
               Sign Up
             </Link>
             <button
               ref={hamburgerRef}
-              className="md:hidden text-[#354e30] p-1 ml-1 bg-transparent border-none cursor-pointer"
+              className="md:hidden text-[#354e30] p-1 ml-1"
               onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
             >
               {mobileMenuOpen ? (
@@ -156,7 +150,6 @@ export default function LandingPage() {
 
         {/* MOBILE MENU DROPDOWN */}
         <div
-          style={{ transformOrigin: "top" }}
           ref={menuRef}
           className={`absolute top-16 left-0 w-full bg-[#f5f2ee] border-b border-[#e0dbd4] px-6 py-6 flex flex-col gap-4 shadow-xl transition-all duration-300 md:hidden z-40 ${
             mobileMenuOpen
@@ -166,13 +159,13 @@ export default function LandingPage() {
         >
           <button
             onClick={() => scrollToSection("explore")}
-            className="text-xl font-medium text-[#354e30] text-left py-2 bg-transparent border-none cursor-pointer"
+            className="text-xl font-medium text-[#354e30] text-left py-2"
           >
             Explore
           </button>
           <button
             onClick={() => scrollToSection("about")}
-            className="text-xl font-medium text-[#354e30] text-left py-2 bg-transparent border-none cursor-pointer"
+            className="text-xl font-medium text-[#354e30] text-left py-2"
           >
             About
           </button>
@@ -193,12 +186,12 @@ export default function LandingPage() {
             </p>
             <div className="mt-8 flex flex-wrap gap-3">
               <Link
-                href="/auth?mode=signup"
-                className="flex items-center gap-2 bg-[#354e30] text-white px-6 py-2.5 rounded-lg font-semibold hover:bg-[#2a3d25] transition-all duration-200 text-sm shadow-sm no-underline"
+                href="/auth"
+                className="flex items-center gap-2 bg-[#354e30] text-white px-6 py-2.5 rounded-lg font-semibold hover:bg-[#2a3d25] transition-all duration-200 text-sm shadow-sm"
               >
                 Get Started <ArrowRight className="w-4 h-4" />
               </Link>
-              <button className="flex items-center gap-2 border border-[#354e30] text-[#354e30] px-6 py-2.5 rounded-lg font-semibold hover:bg-[#354e30] hover:text-white transition-all duration-200 text-sm bg-transparent cursor-pointer">
+              <button className="flex items-center gap-2 border border-[#354e30] text-[#354e30] px-6 py-2.5 rounded-lg font-semibold hover:bg-[#354e30] hover:text-white transition-all duration-200 text-sm">
                 <Play className="w-4 h-4" /> Watch the Demo
               </button>
             </div>
@@ -222,9 +215,8 @@ export default function LandingPage() {
                 <p className="text-[10px] text-[#6b7c6a] font-medium">
                   Verified Sanctuary
                 </p>
-                <p className="text-[10px] text-[#6b7c6a] mt-1 italic leading-normal">
-                  &quot;The quietest spot in the Menteng area for deep
-                  work.&quot;
+                <p className="text-[10px] text-[#6b7c6a] mt-1 italic">
+                  "The quietest spot in the Menteng area for deep work."
                 </p>
               </div>
             </div>
@@ -420,12 +412,12 @@ export default function LandingPage() {
             </p>
             <div className="mt-10 flex flex-wrap gap-4 justify-center">
               <Link
-                href="/auth?mode=signup"
-                className="bg-[#1a2e18] text-white px-6 py-2.5 rounded-lg font-semibold hover:bg-[#111f10] transition-all duration-200 shadow-md text-sm no-underline"
+                href="/auth"
+                className="bg-[#1a2e18] text-white px-6 py-2.5 rounded-lg font-semibold hover:bg-[#111f10] transition-all duration-200 shadow-md text-sm"
               >
                 Sign Up Now
               </Link>
-              <button className="bg-white/90 text-[#2d4228] px-6 py-2.5 rounded-lg font-semibold hover:bg-white transition-all duration-200 shadow-md text-sm border-none cursor-pointer">
+              <button className="bg-white/90 text-[#2d4228] px-6 py-2.5 rounded-lg font-semibold hover:bg-white transition-all duration-200 shadow-md text-sm">
                 Contact Us
               </button>
             </div>
@@ -436,29 +428,20 @@ export default function LandingPage() {
       {/* FOOTER */}
       <footer className="bg-[#1e2d1b] text-[#a8c49e] py-8 px-6">
         <div className="max-w-6xl mx-auto flex flex-col md:flex-row items-center md:items-end justify-between gap-4">
-          <div className="text-center md:text-left">
-            <p className="text-white font-bold text-base m-0">Pojok Teduh</p>
-            <p className="text-xs mt-1 m-0">
+          <div>
+            <p className="text-white font-bold text-base">Pojok Teduh</p>
+            <p className="text-xs mt-1">
               © 2026 Pojok Teduh. All rights reserved.
             </p>
           </div>
           <div className="flex gap-6 text-xs font-medium">
-            <a
-              href="#"
-              className="hover:text-white text-[#a8c49e] no-underline transition-colors"
-            >
+            <a href="#" className="hover:text-white transition-colors">
               Privacy Policy
             </a>
-            <a
-              href="#"
-              className="hover:text-white text-[#a8c49e] no-underline transition-colors"
-            >
+            <a href="#" className="hover:text-white transition-colors">
               Terms of Service
             </a>
-            <a
-              href="#"
-              className="hover:text-white text-[#a8c49e] no-underline transition-colors"
-            >
+            <a href="#" className="hover:text-white transition-colors">
               Contact Us
             </a>
           </div>

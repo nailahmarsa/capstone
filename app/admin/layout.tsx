@@ -116,8 +116,7 @@ export default function AdminLayout({
                     fontWeight: isActive ? "600" : "500",
                     color: isActive ? "#314D31" : "rgba(255,255,255,0.90)",
                     backgroundColor: isActive ? "#E7EAE4" : "transparent",
-                    borderTopRightRadius: "12px",
-                    borderBottomRightRadius: "12px",
+                    borderRadius: "0px",
                     marginRight: "0px",
                     transition: "all 0.15s ease",
                   }}
@@ -130,7 +129,7 @@ export default function AdminLayout({
           </nav>
         </aside>
 
-        {/* Main */}
+        {/* Main Content Container */}
         <div
           style={{
             flex: 1,

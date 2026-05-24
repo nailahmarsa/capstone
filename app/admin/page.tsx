@@ -9,7 +9,7 @@ type Spot = {
   name: string;
   category: string;
   img: string;
-  updatedAt: string;
+  edited: string;
 };
 
 const INITIAL_SPOTS: Spot[] = [
@@ -18,104 +18,65 @@ const INITIAL_SPOTS: Spot[] = [
     name: "Museum Layang-Layang",
     category: "park",
     img: "/museumlayang.png",
-    updatedAt: new Date().toISOString(),
+    edited: "6 minutes ago",
   },
   {
     id: 2,
     name: "Galeri Salihara",
     category: "park",
     img: "/salihara.jpg",
-    updatedAt: new Date().toISOString(),
+    edited: "45 minutes ago",
   },
   {
     id: 3,
     name: "TierSpace",
     category: "cafe",
     img: "/tierspace.png",
-    updatedAt: new Date().toISOString(),
+    edited: "8 hours ago",
   },
   {
     id: 4,
     name: "Perpustakaan Freedom",
     category: "library",
     img: "/freedomlib.jpg",
-    updatedAt: new Date().toISOString(),
+    edited: "1 day ago",
   },
   {
     id: 5,
     name: "GoWork Fatmawati",
     category: "cafe",
     img: "/gowork.png",
-    updatedAt: new Date().toISOString(),
+    edited: "2 days ago",
   },
   {
     id: 6,
     name: "Cinere Garden Food Street",
     category: "cafe",
     img: "/cinere.jpg",
-    updatedAt: new Date().toISOString(),
+    edited: "3 days ago",
   },
 ];
 
-function timeAgo(dateString: string) {
-  const seconds = Math.floor(
-    (new Date().getTime() - new Date(dateString).getTime()) / 1000,
-  );
-
-  const minutes = Math.floor(seconds / 60);
-  const hours = Math.floor(seconds / 3600);
-  const days = Math.floor(seconds / 86400);
-
-  if (seconds < 60) return "just now";
-  if (minutes < 60) return `${minutes} minute${minutes > 1 ? "s" : ""} ago`;
-  if (hours < 24) return `${hours} hour${hours > 1 ? "s" : ""} ago`;
-
-  return `${days} day${days > 1 ? "s" : ""} ago`;
-}
-
 export default function DashboardPage() {
   const router = useRouter();
-  const [spots, setSpots] = useState<Spot[]>([]);
+  const [spots] = useState<Spot[]>(INITIAL_SPOTS);
   const [isAuthorized, setIsAuthorized] = useState(false);
-  const [admin, setAdmin] = useState({
-    name: "Aisyah Rahma",
-    email: "aisyahrahma@gmail.com",
-    avatar: "/profilepic.jpg",
-  });
 
   useEffect(() => {
-    // ─── BYPASS LOGIN DI DASHBOARD ADMIN (DEVELOPMENT MODE) ───
-    setIsAuthorized(true);
+    const token = localStorage.getItem("token");
+    const role = localStorage.getItem("role");
 
-    const savedSpots = localStorage.getItem("spots");
-    if (savedSpots) {
-      setSpots(JSON.parse(savedSpots));
+    if (!token || role !== "admin") {
+      router.replace("/auth");
     } else {
-      setSpots(INITIAL_SPOTS);
-    }
-
-    const storedUsername = localStorage.getItem("username");
-    const storedEmail = localStorage.getItem("email");
-    if (storedUsername || storedEmail) {
-      setAdmin({
-        name: storedUsername || "Aisyah Rahma",
-        email: storedEmail || "aisyahrahma@gmail.com",
-        avatar: "/profilepic.jpg",
-      });
+      setIsAuthorized(true);
     }
   }, [router]);
 
   const cafeCount = spots.filter((s) => s.category === "cafe").length;
   const libraryCount = spots.filter((s) => s.category === "library").length;
   const parkCount = spots.filter((s) => s.category === "park").length;
-
-  // Menampilkan 3 data teratas yang paling baru diubah/ditambahkan
-  const latestEdits = [...spots]
-    .sort(
-      (a, b) =>
-        new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime(),
-    )
-    .slice(0, 3);
+  const latestEdits = spots.slice(0, 3);
 
   const stats = [
     { label: "Cafe Spot", count: cafeCount },
@@ -134,7 +95,6 @@ export default function DashboardPage() {
         flexDirection: "column",
       }}
     >
-      {/* Topbar (Search Bar Dihilangkan Semenarik Management Spot) */}
       <header
         style={{
           display: "flex",
@@ -143,7 +103,6 @@ export default function DashboardPage() {
           padding: "20px 40px",
         }}
       >
-        {/* Avatar */}
         <button
           onClick={() => router.push("/admin/profile-admin")}
           style={{
@@ -161,7 +120,7 @@ export default function DashboardPage() {
           onMouseLeave={(e) => (e.currentTarget.style.background = "none")}
         >
           <span style={{ fontSize: "13px", color: "#555", fontWeight: "500" }}>
-            {admin.name}
+            Aisyah Rahma
           </span>
           <div
             style={{
@@ -173,7 +132,7 @@ export default function DashboardPage() {
             }}
           >
             <img
-              src={admin.avatar}
+              src="/profilepic.jpg"
               alt="Avatar"
               style={{ width: "100%", height: "100%", objectFit: "cover" }}
             />
@@ -181,7 +140,6 @@ export default function DashboardPage() {
         </button>
       </header>
 
-      {/* Content */}
       <main style={{ padding: "8px 40px 40px", flex: 1 }}>
         <h2
           style={{
@@ -198,7 +156,6 @@ export default function DashboardPage() {
           Here&apos;s what&apos;s happening today!
         </p>
 
-        {/* Stats Cards */}
         <div
           style={{
             display: "grid",
@@ -234,8 +191,7 @@ export default function DashboardPage() {
                   gap: "3px",
                 }}
               >
-                <TrendingUp size={10} />
-                2.5%
+                <TrendingUp size={10} /> 2.5%
               </div>
               <div
                 style={{
@@ -262,7 +218,6 @@ export default function DashboardPage() {
           ))}
         </div>
 
-        {/* Latest Edits */}
         <h3
           style={{
             fontSize: "15px",
@@ -321,7 +276,7 @@ export default function DashboardPage() {
                   {spot.name}
                 </div>
                 <div style={{ fontSize: "12px", color: "#999" }}>
-                  Last edited {timeAgo(spot.updatedAt)}
+                  Last edited {spot.edited}
                 </div>
               </div>
             </div>
